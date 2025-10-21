@@ -6,7 +6,7 @@ package com.gomoku;
  */
 public class GameLogic {
     private final Board board;
-    private final int winStreak; // The number of pieces required to win (5 for Gomoku)
+    private final int winStreak;
 
     /**
      * Constructor.
