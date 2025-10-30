@@ -2,160 +2,132 @@ package com.gomoku;
 
 /**
  * Provides the heuristic evaluation function for the Minimax algorithm.
- * It assigns a score to the current board state based on potential winning lines.
+ *
+ * This evaluator uses a "sliding window" approach. It does not count
+ * from "each piece". Instead, it iterates across the board, looking at
+ * all possible "lines of 5" (horizontal, vertical, and diagonals)
+ * and scores *each line*.
+ * This prevents double-counting and is efficient (O(N^2)).
  */
 public class Evaluator {
-    // Assign high values to important streaks
-    private static final int WINNING_SCORE = 100000; // Value for an immediate win
-    private static final int FOUR_OPEN = 10000;    // Four in a row, open on both ends (critical)
-    private static final int THREE_OPEN = 1000;    // Three in a row, open on both ends
-    private static final int TWO_OPEN = 100;       // Two in a row, open on both ends
+    // Scores for threats.
+    // These scores must be orders of magnitude less than WIN_SCORE in MinimaxAI.
+    private static final int FIVE_IN_ROW = 100000; // 5 in a row (technically WIN_SCORE)
+    private static final int FOUR_IN_ROW = 10000;   // 4 in a row, 0 opponent pieces
+    private static final int THREE_IN_ROW = 1000;   // 3 in a row, 0 opponent pieces
+    private static final int TWO_IN_ROW = 100;      // 2 in a row, 0 opponent pieces
 
-    // Direction vectors for checking Horizontal, Vertical, and Diagonals
-    private static final int[][] DIRECTIONS = {
-            {0, 1},   // Horizontal (r, c+1)
-            {1, 0},   // Vertical (r+1, c)
-            {1, 1},   // Main Diagonal (r+1, c+1)
-            {1, -1}   // Anti Diagonal (r+1, c-1)
-    };
+    // TODO: A more advanced Evaluator would also consider "open ends"
+    // (e.g., _XXX_ (open 3) is much more valuable than OXXX_ (closed 3)).
+    // But this "simple" evaluation will work for now.
 
-    private final GameLogic logic;
+    private final GameLogic logic; // Not used in this version, but kept for potential future use
     private final int winStreak;
     private final int boardSize;
+    private final int aiPlayer;
+    private final int opponent;
 
     /**
      * Constructor
      */
-    public Evaluator(GameLogic logic, int winStreak, int boardSize) {
+    public Evaluator(GameLogic logic, int winStreak, int boardSize, int aiPlayer, int opponent) {
         this.logic = logic;
         this.winStreak = winStreak;
         this.boardSize = boardSize;
+        this.aiPlayer = aiPlayer;
+        this.opponent = opponent;
     }
 
     /**
      * The main evaluation function.
+     * Iterates through all possible lines (horizontal, vertical, diagonal)
+     * and calculates a net score.
      * @param board The current state of the board.
-     * @param currentPlayer The player who just made the move (or whose score we are maximizing).
-     * @return The integer score of the current board state.
+     * @return The NET score (AI_Score - Opponent_Score).
      */
-    public int evaluate(Board board, int currentPlayer) {
-        int score = 0;
+    public int evaluate(Board board) {
+        int aiScore = 0;
+        int opponentScore = 0;
 
-        // TODO: First, check for immediate win using GameLogic.
-
-        // Iterate through all possible cells to find scoring streaks
+        // 1. Evaluate Horizontals
         for (int r = 0; r < boardSize; r++) {
-            for (int c = 0; c < boardSize; c++) {
-                if (board.getCell(r, c) != Board.EMPTY) {
-                    // Check horizontal, vertical and both diagonals starting from (r, c)
-                    score += evaluateCell(board, r, c);
-                }
+            // Slide a window of `winStreak` cells across the row
+            for (int c = 0; c <= boardSize - winStreak; c++) {
+                aiScore += evaluateWindow(board, r, c, 0, 1, aiPlayer); // AI's score
+                opponentScore += evaluateWindow(board, r, c, 0, 1, opponent); // Opponent's score
             }
         }
 
-        // TODO: Adjust score based on which player we are maximizing (currentPlayer vs Opponent)
-        return score;
+        // 2. Evaluate Verticals
+        for (int c = 0; c < boardSize; c++) {
+            // Slide a window down the column
+            for (int r = 0; r <= boardSize - winStreak; r++) {
+                aiScore += evaluateWindow(board, r, c, 1, 0, aiPlayer);
+                opponentScore += evaluateWindow(board, r, c, 1, 0, opponent);
+            }
+        }
+
+        // 3. Evaluate Main Diagonals (\)
+        // (Top-left to bottom-right)
+        for (int r = 0; r <= boardSize - winStreak; r++) {
+            for (int c = 0; c <= boardSize - winStreak; c++) {
+                aiScore += evaluateWindow(board, r, c, 1, 1, aiPlayer);
+                opponentScore += evaluateWindow(board, r, c, 1, 1, opponent);
+            }
+        }
+
+        // 4. Evaluate Anti-Diagonals (/)
+        // (Top-right to bottom-left)
+        for (int r = winStreak - 1; r < boardSize; r++) { // Start from row `winStreak-1` (e.g., row 4)
+            for (int c = 0; c <= boardSize - winStreak; c++) {
+                aiScore += evaluateWindow(board, r, c, -1, 1, aiPlayer); // (r-1, c+1)
+                opponentScore += evaluateWindow(board, r, c, -1, 1, opponent);
+            }
+        }
+
+        // Return the net score. A positive score favors the AI.
+        return aiScore - opponentScore;
     }
 
     /**
-     * Helper method to analyze streaks originating from a single cell (r, c).
+     * Evaluates a single "window" of `winStreak` (e.g., 5) cells for ONE player.
+     *
+     * @param board The board state.
+     * @param r_start The starting row of the window.
+     * @param c_start The starting column of the window.
+     * @param dr The row direction delta (0, 1, 1, or -1).
+     * @param dc The column direction delta (1, 0, 1, or 1).
+     * @param player The player we are scoring this window for.
+     * @return The score for this window for this specific player.
      */
-    private int evaluateCell(Board board, int r, int c) {
-        int cellScore = 0;
-        int player = board.getCell(r, c); // The player who owns this cell
+    private int evaluateWindow(Board board, int r_start, int c_start, int dr, int dc, int player) {
+        int playerCount = 0;
+        int opponentCount = 0;
 
-        // Iterate through all 4 directions: H, V, D1, D2
-        for (int[] dir : DIRECTIONS) {
-
-            // Analyze the streak in one specific direction (e.g., Horizontal to the right)
-            cellScore += evaluateDirection(board, r, c, player, dir[0], dir[1]);
+        // Count the pieces for each player within this 5-cell window
+        for (int i = 0; i < winStreak; i++) {
+            int cell = board.getCell(r_start + i * dr, c_start + i * dc);
+            if (cell == player) {
+                playerCount++;
+            } else if (cell != Board.EMPTY) {
+                opponentCount++;
+            }
         }
 
-        return cellScore;
+        // If pieces from *both* players are in this window,
+        // it's a "dead" or "blocked" window and represents no threat.
+        if (playerCount > 0 && opponentCount > 0) {
+            return 0;
+        }
+
+        // The window contains pieces from only this player (or is empty)
+        // Assign score based on the number of pieces.
+        return switch (playerCount) {
+            case 5 -> FIVE_IN_ROW;
+            case 4 -> FOUR_IN_ROW;
+            case 3 -> THREE_IN_ROW;
+            case 2 -> TWO_IN_ROW;
+            default -> 0; // 0 or 1 piece
+        };
     }
-
-    /**
-     * Analyzes a single direction (dx, dy) starting from (r, c) for a player's streak.
-     * @param board The current board.
-     * @param r Start row.
-     * @param c Start column.
-     * @param player The player whose streak we are checking.
-     * @param dr Direction row increment.
-     * @param dc Direction column increment.
-     * @return The score contribution from this direction.
-     */
-    private int evaluateDirection(Board board, int r, int c, int player, int dr, int dc) {
-        // check for streaks starting at (r, c) and extending in the positive direction (dr, dc).
-
-        int score = 0;
-        int streakLength = 0;
-        int openEnds = 0; // Number of empty cells available at the ends of the streak
-
-        int r1 = r;
-        int c1 = c;
-
-        // Calculate the streak length in the positive direction (dr, dc)
-        while (r1 >= 0 && r1 < boardSize && c1 >= 0 && c1 < boardSize && board.getCell(r1, c1) == player) {
-            streakLength++;
-            r1 += dr;
-            c1 += dc;
-        }
-
-        // Check the end of the streak (the cell after the streak ends)
-        boolean end1Open = false;
-        if (r1 >= 0 && r1 < boardSize && c1 >= 0 && c1 < boardSize && board.getCell(r1, c1) == Board.EMPTY) {
-            end1Open = true; // The streak is open on the positive end
-        }
-
-        // Calculate the streak length in the negative direction (-dr, -dc)
-        // We start one step back from the original (r, c) to avoid double counting the original cell.
-        int r2 = r - dr;
-        int c2 = c - dc;
-
-        while (r2 >= 0 && r2 < boardSize && c2 >= 0 && c2 < boardSize && board.getCell(r2, c2) == player) {
-            streakLength++;
-            r2 -= dr;
-            c2 -= dc;
-        }
-
-        // Check the end of the streak on the negative side (the cell before the streak starts)
-        boolean end2Open = false;
-        if (r2 >= 0 && r2 < boardSize && c2 >= 0 && c2 < boardSize && board.getCell(r2, c2) == Board.EMPTY) {
-            end2Open = true; // The streak is open on the negative end
-        }
-
-        // Calculate Open Ends
-        if (end1Open && end2Open) {
-            openEnds = 2; // Open on both sides (e.g., _XXX_)
-        } else if (end1Open || end2Open) {
-            openEnds = 1; // Open on one side (e.g., XXXXX_) or (_XXXXX)
-        }
-
-        // Assign Score Based on Streak Length and Open Ends
-
-        // If the streak is long enough to win:
-        if (streakLength >= winStreak) {
-            score = WINNING_SCORE;
-        }
-
-        // Assign scores for threats (less than 5)
-        else if (streakLength == 4) {
-            if (openEnds == 2) { // _XXXX_ (Immediate win threat)
-                score = FOUR_OPEN;
-            } else if (openEnds == 1) { // _XXXXo or oXXXX_ (Must block)
-                score = FOUR_OPEN / 10; // Still a high score, but less critical
-            }
-        } else if (streakLength == 3) {
-            if (openEnds == 2) { // _XXX_ (Two threats in two directions)
-                score = THREE_OPEN;
-            }
-        } else if (streakLength == 2) {
-            if (openEnds == 2) { // _XX_
-                score = TWO_OPEN;
-            }
-        }
-
-        return score;
-    }
-
 }
