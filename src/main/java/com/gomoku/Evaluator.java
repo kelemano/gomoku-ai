@@ -17,11 +17,10 @@ public class Evaluator {
     private static final int THREE_IN_ROW = 1000;   // 3 in a row, 0 opponent pieces
     private static final int TWO_IN_ROW = 100;      // 2 in a row, 0 opponent pieces
 
-    // TODO: A more advanced Evaluator would also consider "open ends"
-    // (e.g., _XXX_ (open 3) is much more valuable than OXXX_ (closed 3)).
-    // But this "simple" evaluation will work for now.
 
-    private final GameLogic logic; // Not used in this version, but kept for potential future use
+
+
+    private final GameLogic logic;
     private final int winStreak;
     private final int boardSize;
     private final int aiPlayer;
@@ -114,7 +113,7 @@ public class Evaluator {
             }
         }
 
-        // If pieces from *both* players are in this window,
+        // If pieces from both players are in this window,
         // it's a "dead" or "blocked" window and represents no threat.
         if (playerCount > 0 && opponentCount > 0) {
             return 0;

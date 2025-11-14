@@ -67,20 +67,18 @@ public class Board {
             return false;
         }
 
-        // *** ИСПРАВЛЕНИЕ ***
-        // Позволяем ИИ "отменить" ход, установив ячейку обратно в EMPTY.
         if (player == EMPTY) {
             grid[r][c] = EMPTY;
             return true;
         }
 
-        // Стандартная логика: можно ходить только в пустую ячейку
+
         if (grid[r][c] == EMPTY) {
             grid[r][c] = player;
-            return true; // Move successfully placed
+            return true;
         }
 
-        return false; // Cell is occupied
+        return false;
     }
 
     /**
