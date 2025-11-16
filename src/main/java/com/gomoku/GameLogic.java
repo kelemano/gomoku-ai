@@ -1,5 +1,9 @@
 package com.gomoku;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Class responsible for checking the game state,
  * particularly the win condition (five-in-a-row).
@@ -77,5 +81,63 @@ public class GameLogic {
 
         // Final check for the combined streak
         return streak >= winStreak;
+    }
+
+    /**
+     * НОВЫЙ МЕТОД: Находит и возвращает 5 координат победной линии.
+     * @return Список из 5+ координат [r, c] или null, если победы нет.
+     */
+    public List<int[]> findWinningLine(int lastR, int lastC, int player) {
+        if (player == Board.EMPTY) return null;
+
+        List<int[]> line;
+
+        line = getLineCoordinates(lastR, lastC, player, 0, 1); // Horizontal
+        if (line != null) return line;
+
+        line = getLineCoordinates(lastR, lastC, player, 1, 0); // Vertical
+        if (line != null) return line;
+
+        line = getLineCoordinates(lastR, lastC, player, 1, 1); // Main Diagonal
+        if (line != null) return line;
+
+        line = getLineCoordinates(lastR, lastC, player, 1, -1); // Anti-Diagonal
+        if (line != null) return line;
+
+        return null; // Победы нет
+    }
+
+    /**
+     * НОВЫЙ МЕТОД: Собирает координаты фишек в одной линии.
+     * @return Список координат, если их >= winStreak, иначе null.
+     */
+    private List<int[]> getLineCoordinates(int r, int c, int player, int dr, int dc) {
+        List<int[]> line = new ArrayList<>();
+        line.add(new int[]{r, c}); // Добавляем фишку, которой сходили
+
+        // Идем в положительном направлении
+        for (int i = 1; i < winStreak; i++) {
+            int nr = r + dr * i;
+            int nc = c + dc * i;
+            if (board.isValid(nr, nc) && board.getCell(nr, nc) == player) {
+                line.add(new int[]{nr, nc});
+            } else {
+                break;
+            }
+        }
+
+        // Идем в отрицательном направлении
+        for (int i = 1; i < winStreak; i++) {
+            int nr = r - dr * i;
+            int nc = c - dc * i;
+            if (board.isValid(nr, nc) && board.getCell(nr, nc) == player) {
+                line.add(new int[]{nr, nc});
+            } else {
+                break;
+            }
+        }
+
+        // Если фишек 5 или больше, возвращаем линию
+        return (line.size() >= winStreak) ? line : null;
     }
 }

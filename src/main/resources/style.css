@@ -159,4 +159,36 @@
     -fx-background-color: #4e76c9;
 }
 
+/* ================================== */
+/* ===    АНИМАЦИЯ ПОЯВЛЕНИЯ     === */
+/* ================================== */
+
+@keyframes piece-appear {
+    from {
+        -fx-opacity: 0.0;
+        -fx-scale-x: 0.7;
+        -fx-scale-y: 0.7;
+    }
+    to {
+        -fx-opacity: 1.0;
+        -fx-scale-x: 1.0;
+        -fx-scale-y: 1.0;
+    }
+}
+
+/* Применяем анимацию к фишкам */
+.player-x-piece, .player-o-piece {
+    -fx-animation: piece-appear 0.3s ease-out;
+}
+
+.winning-line {
+    -fx-stroke: #FFD700;
+    -fx-stroke-width: 3px;
+    -fx-stroke-line-cap: ROUND;
+
+    -fx-effect: dropshadow(gaussian, rgba(255, 215, 0, 0.7), 10, 0.9, 0, 0);
+}
+
+
+
 

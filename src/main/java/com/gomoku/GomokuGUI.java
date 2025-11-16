@@ -18,7 +18,9 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.HBox;
 import javafx.scene.control.Button;
 import javafx.geometry.Insets;
-
+import javafx.scene.shape.Line;
+import java.util.List;
+import java.util.Comparator;
 
 public class GomokuGUI extends Application {
 
@@ -31,6 +33,7 @@ public class GomokuGUI extends Application {
     private Button newGameButton; // НОВОЕ
     private Circle lastMoveMarker = null;
 
+    private Pane drawingPane;
     // We need a 2D array of StackPanes to easily add pieces (Circles) to them
     private final StackPane[][] cellPanes = new StackPane[BOARD_SIZE][BOARD_SIZE];
 
@@ -106,6 +109,14 @@ public class GomokuGUI extends Application {
                 cellPanes[r][c] = cell; // Store it for later access
             }
         }
+
+        // --- ИЗМЕНЕНИЕ: Встраиваем drawingPane внутрь сетки ---
+                // Слой для рисования, должен быть прозрачным и не ловить клики
+                drawingPane = new Pane();
+        drawingPane.setMouseTransparent(true);
+        // Растягиваем его на все 15x15 ячеек
+        grid.add(drawingPane, 0, 0, BOARD_SIZE, BOARD_SIZE);
+        // --- КОНЕЦ ИЗМЕНЕНИЯ ---
         return grid;
     }
 
@@ -141,9 +152,7 @@ public class GomokuGUI extends Application {
         });
     }
 
-    /**
-     * НОВЫЙ МЕТОД: Очищает доску для новой игры
-     */
+
     public void clearBoard() {
         Platform.runLater(() -> {
             for (int r = 0; r < BOARD_SIZE; r++) {
@@ -151,6 +160,7 @@ public class GomokuGUI extends Application {
                     cellPanes[r][c].getChildren().clear();
                 }
             }
+            drawingPane.getChildren().clear();
             lastMoveMarker = null;
         });
     }
@@ -181,6 +191,32 @@ public class GomokuGUI extends Application {
             dialogPane.getStyleClass().add("game-over-dialog");
 
             alert.showAndWait();
+        });
+    }
+
+
+    public void drawWinningLine(List<int[]> lineCoords) {
+        if (lineCoords == null || lineCoords.size() < 2) return;
+
+        lineCoords.sort(Comparator.comparingInt(coord -> coord[0]));
+
+        if (lineCoords.get(0)[0] == lineCoords.get(lineCoords.size() - 1)[0]) {
+            lineCoords.sort(Comparator.comparingInt(coord -> coord[1]));
+        }
+
+        int[] first = lineCoords.get(0);
+        int[] last = lineCoords.get(lineCoords.size() - 1);
+
+
+        double startX = (first[1] * CELL_SIZE) + (CELL_SIZE / 2.0);
+        double startY = (first[0] * CELL_SIZE) + (CELL_SIZE / 2.0);
+        double endX = (last[1] * CELL_SIZE) + (CELL_SIZE / 2.0);
+        double endY = (last[0] * CELL_SIZE) + (CELL_SIZE / 2.0);
+
+        Platform.runLater(() -> {
+            Line line = new Line(startX, startY, endX, endY);
+            line.getStyleClass().add("winning-line");
+            drawingPane.getChildren().add(line);
         });
     }
 }

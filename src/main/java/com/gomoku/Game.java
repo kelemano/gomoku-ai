@@ -1,6 +1,7 @@
 package com.gomoku;
 
 import javafx.concurrent.Task;
+import java.util.List;
 
 /**
  * The Game Controller.
@@ -45,7 +46,7 @@ public class Game {
 
     public void resetGame() {
         if (aiIsThinking) {
-            return; // Не перезапускаем, пока AI думает
+            return;
         }
         initializeGame();
         gui.clearBoard(); // Очищаем доску в GUI
@@ -75,8 +76,12 @@ public class Game {
 
             // 3. Check Game State
             if (logic.checkWin(r, c, HUMAN_PLAYER)) {
-                gui.showGameEndMessage(" \uD83C\uDF89 YOU WIN! \uD83C\uDF89");
                 gameRunning = false;
+
+                List<int[]> winningLine = logic.findWinningLine(r, c, HUMAN_PLAYER);
+                gui.drawWinningLine(winningLine);
+
+                gui.showGameEndMessage(" \uD83C\uDF89 YOU WIN! \uD83C\uDF89");
             } else if (isBoardFull()) {
                 gui.showGameEndMessage("\uD83E\uDD1D IT'S A DRAW! \uD83E\uDD1D");
                 gameRunning = false;
@@ -120,8 +125,12 @@ public class Game {
 
             // 3. Check Game State
             if (logic.checkWin(r, c, AI_PLAYER)) {
-                gui.showGameEndMessage("\uD83E\uDD16 AI WINS! \uD83E\uDD16");
                 gameRunning = false;
+                // Находим и рисуем линию
+                List<int[]> winningLine = logic.findWinningLine(r, c, AI_PLAYER);
+                gui.drawWinningLine(winningLine);
+                // Показываем сообщение
+                gui.showGameEndMessage("\uD83E\uDD16 AI WINS! \uD83E\uDD16");
             } else if (isBoardFull()) {
                 gui.showGameEndMessage("\uD83E\uDD1D IT'S A DRAW! \uD83E\uDD1D");
                 gameRunning = false;
@@ -158,9 +167,7 @@ public class Game {
         return gameRunning;
     }
 
-    /**
-     * НОВЫЙ МЕТОД: Проверка, думает ли AI
-     */
+
     public boolean isAiThinking() {
         return aiIsThinking;
     }
