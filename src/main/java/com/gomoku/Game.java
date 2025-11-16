@@ -16,9 +16,9 @@ public class Game {
     private static final int HUMAN_PLAYER = Board.PLAYER_X;
     private static final int AI_PLAYER = Board.PLAYER_O;
 
-    private final Board board;
-    private final GameLogic logic;
-    private final MinimaxAI ai;
+    private Board board;
+    private GameLogic logic;
+    private MinimaxAI ai;
 
     private final GomokuGUI gui; // A reference to the GUI to send commands
 
@@ -31,12 +31,27 @@ public class Game {
      * @param gui A reference to the GomokuGUI (the View).
      */
     public Game(GomokuGUI gui) {
+        this.gui = gui; // Store the reference to the GUI
+        initializeGame();
+    }
+
+    private void initializeGame() {
         this.board = new Board(BOARD_SIZE);
         this.logic = new GameLogic(board, WIN_STREAK);
         this.ai = new MinimaxAI(AI_PLAYER, HUMAN_PLAYER, AI_DEPTH, logic, BOARD_SIZE);
         this.gameRunning = true;
         this.currentPlayer = HUMAN_PLAYER;
-        this.gui = gui; // Store the reference to the GUI
+    }
+
+    public void resetGame() {
+        if (aiIsThinking) {
+            return; // Не перезапускаем, пока AI думает
+        }
+        initializeGame();
+        gui.clearBoard(); // Очищаем доску в GUI
+        gui.updateStatus("New game! Your turn.");
+
+        System.out.println("🔄 Game reset!");
     }
 
     /**
@@ -60,10 +75,10 @@ public class Game {
 
             // 3. Check Game State
             if (logic.checkWin(r, c, HUMAN_PLAYER)) {
-                gui.showGameEndMessage("YOU WIN!");
+                gui.showGameEndMessage(" \uD83C\uDF89 YOU WIN! \uD83C\uDF89");
                 gameRunning = false;
             } else if (isBoardFull()) {
-                gui.showGameEndMessage("IT'S A DRAW!");
+                gui.showGameEndMessage("\uD83E\uDD1D IT'S A DRAW! \uD83E\uDD1D");
                 gameRunning = false;
             } else {
                 // 4. Pass Turn to AI
@@ -81,7 +96,7 @@ public class Game {
         if (!gameRunning) return;
 
         aiIsThinking = true;
-        gui.updateStatus("AI's turn! Thinking...");
+        gui.updateStatus("\uD83E\uDD16 AI's turn! Thinking...");
 
 
         Task<int[]> aiMoveTask = new Task<>() {
@@ -105,10 +120,10 @@ public class Game {
 
             // 3. Check Game State
             if (logic.checkWin(r, c, AI_PLAYER)) {
-                gui.showGameEndMessage("AI WINS!");
+                gui.showGameEndMessage("\uD83E\uDD16 AI WINS! \uD83E\uDD16");
                 gameRunning = false;
             } else if (isBoardFull()) {
-                gui.showGameEndMessage("IT'S A DRAW!");
+                gui.showGameEndMessage("\uD83E\uDD1D IT'S A DRAW! \uD83E\uDD1D");
                 gameRunning = false;
             } else {
                 // 4. Pass Turn to Human
@@ -118,6 +133,12 @@ public class Game {
             aiIsThinking = false;
         });
 
+        aiMoveTask.setOnFailed(event -> {
+            System.err.println("❌ AI error: " + aiMoveTask.getException());
+            gui.updateStatus("AI error! Your turn.");
+            aiIsThinking = false;
+            currentPlayer = HUMAN_PLAYER;
+        });
         // Start the background thread
         new Thread(aiMoveTask).start();
     }
@@ -131,6 +152,17 @@ public class Game {
             }
         }
         return true;
+    }
+
+    public boolean isGameRunning() {
+        return gameRunning;
+    }
+
+    /**
+     * НОВЫЙ МЕТОД: Проверка, думает ли AI
+     */
+    public boolean isAiThinking() {
+        return aiIsThinking;
     }
 
 }

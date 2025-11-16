@@ -11,6 +11,29 @@
     -fx-padding: 20px;
 }
 
+/* НОВОЕ: Стиль для кнопки New Game */
+.new-game-button {
+    -fx-background-color: #3B5998;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-padding: 10px 20px;
+    -fx-background-radius: 8px;
+    -fx-cursor: HAND;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 5, 0.0, 0, 2);
+}
+
+.new-game-button:hover {
+    -fx-background-color: #4e76c9;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 8, 0.0, 0, 3);
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+}
+
+.new-game-button:pressed {
+    -fx-background-color: #2d4373;
+    -fx-translate-y: 1px;
+}
 
 .game-board {
 
@@ -43,8 +66,6 @@
     -fx-max-width: 40px;
     -fx-max-height: 40px;
 
-
-    -fx-transition: -fx-background-color 0.1s ease-in-out;
 }
 
 
@@ -69,7 +90,6 @@
     -fx-effect: innershadow(gaussian, rgba(0,0,0,0.2), 8, 0.0, 2, 2);
     -fx-stroke: null;
 
-    -fx-animation: piece-appear 0.3s ease-out;
 }
 
 .player-o-piece {
@@ -85,23 +105,7 @@
     -fx-effect: innershadow(gaussian, rgba(0,0,0,0.2), 8, 0.0, 2, 2);
     -fx-stroke: null;
 
-    -fx-animation: piece-appear 0.3s ease-out;
 }
-
-
-@keyframes piece-appear {
-    from {
-        -fx-opacity: 0.0;
-        -fx-scale-x: 0.7;
-        -fx-scale-y: 0.7;
-    }
-    to {
-        -fx-opacity: 1.0;
-        -fx-scale-x: 1.0;
-        -fx-scale-y: 1.0;
-    }
-}
-
 
 
 .last-move-highlight {
@@ -115,16 +119,6 @@
     -fx-effect: dropshadow(gaussian, #00897B, 15, 0.8, 0, 0),
     innershadow(gaussian, rgba(0,0,0,0.2), 8, 0.0, 2, 2);
 }
-
-
-
-.overlay-pane {
-    -fx-background-color: rgba(255, 255, 255, 0.7);
-    -fx-background-radius: 8px;
-}
-
-
-
 
 .game-over-dialog {
     -fx-background-color: #F7F7F7;
@@ -159,20 +153,10 @@
     -fx-font-weight: bold;
     -fx-background-radius: 5px;
     -fx-cursor: HAND;
-    -fx-transition: -fx-background-color 0.15s ease;
 }
 
 .game-over-dialog .button:hover {
     -fx-background-color: #4e76c9;
 }
 
-
-.player-x-piece-small {
-    -fx-fill: #3B5998;
-    -fx-stroke: null;
-}
-.player-o-piece-small {
-    -fx-fill: #00897B;
-    -fx-stroke: null;
-}
 

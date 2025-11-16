@@ -12,10 +12,13 @@ package com.gomoku;
 public class Evaluator {
     // Scores for threats.
     // These scores must be orders of magnitude less than WIN_SCORE in MinimaxAI.
-    private static final int FIVE_IN_ROW = 100000; // 5 in a row (technically WIN_SCORE)
-    private static final int FOUR_IN_ROW = 10000;   // 4 in a row, 0 opponent pieces
-    private static final int THREE_IN_ROW = 1000;   // 3 in a row, 0 opponent pieces
-    private static final int TWO_IN_ROW = 100;      // 2 in a row, 0 opponent pieces
+    private static final int FIVE = 100000;           // Победа
+    private static final int OPEN_FOUR = 50000;       // _XXXX_ (гарантированный выигрыш)
+    private static final int FOUR = 10000;            // XXXX_ или _XXXX
+    private static final int OPEN_THREE = 5000;       // _XXX_ (двойная угроза)
+    private static final int THREE = 1000;            // XXX_ или _XXX
+    private static final int OPEN_TWO = 500;          // _XX_
+    private static final int TWO = 100;
 
 
 
@@ -50,83 +53,103 @@ public class Evaluator {
 
         // 1. Evaluate Horizontals
         for (int r = 0; r < boardSize; r++) {
-            // Slide a window of `winStreak` cells across the row
-            for (int c = 0; c <= boardSize - winStreak; c++) {
-                aiScore += evaluateWindow(board, r, c, 0, 1, aiPlayer); // AI's score
-                opponentScore += evaluateWindow(board, r, c, 0, 1, opponent); // Opponent's score
-            }
+            aiScore += evaluateLine(board, r, 0, 0, 1, aiPlayer); // AI's score
+            opponentScore += evaluateLine(board, r, 0, 0, 1, opponent); // Opponent's score
+
         }
 
         // 2. Evaluate Verticals
         for (int c = 0; c < boardSize; c++) {
-            // Slide a window down the column
-            for (int r = 0; r <= boardSize - winStreak; r++) {
-                aiScore += evaluateWindow(board, r, c, 1, 0, aiPlayer);
-                opponentScore += evaluateWindow(board, r, c, 1, 0, opponent);
-            }
+            aiScore += evaluateLine(board, 0, c, 1, 0, aiPlayer);
+            opponentScore += evaluateLine(board, 0, c, 1, 0, opponent);
         }
 
         // 3. Evaluate Main Diagonals (\)
-        // (Top-left to bottom-right)
-        for (int r = 0; r <= boardSize - winStreak; r++) {
-            for (int c = 0; c <= boardSize - winStreak; c++) {
-                aiScore += evaluateWindow(board, r, c, 1, 1, aiPlayer);
-                opponentScore += evaluateWindow(board, r, c, 1, 1, opponent);
-            }
+        for (int r = 0; r < boardSize; r++) {
+                aiScore += evaluateLine(board, r,0, 1, 1, aiPlayer);
+                opponentScore += evaluateLine(board, r, 0, 1, 1, opponent);
+        }
+        for (int c = 1; c < boardSize; c++) {
+            aiScore += evaluateLine(board, 0,c, 1, 1, aiPlayer);
+            opponentScore += evaluateLine(board, 0,c, 1, 1, opponent);
         }
 
         // 4. Evaluate Anti-Diagonals (/)
-        // (Top-right to bottom-left)
-        for (int r = winStreak - 1; r < boardSize; r++) { // Start from row `winStreak-1` (e.g., row 4)
-            for (int c = 0; c <= boardSize - winStreak; c++) {
-                aiScore += evaluateWindow(board, r, c, -1, 1, aiPlayer); // (r-1, c+1)
-                opponentScore += evaluateWindow(board, r, c, -1, 1, opponent);
-            }
+        for (int r = 0; r < boardSize; r++) { // Start from row `winStreak-1` (e.g., row 4)
+            aiScore += evaluateLine(board, r, boardSize - 1, 1, -1, aiPlayer);
+            opponentScore += evaluateLine(board, r, boardSize - 1, 1, -1, opponent);
+        }
+        for (int c = boardSize - 2; c >= 0; c--) {
+            aiScore += evaluateLine(board, 0, c, 1, -1, aiPlayer);
+            opponentScore += evaluateLine(board, 0, c, 1, -1, opponent);
         }
 
         // Return the net score. A positive score favors the AI.
         return aiScore - opponentScore;
     }
 
-    /**
-     * Evaluates a single "window" of `winStreak` (e.g., 5) cells for ONE player.
-     *
-     * @param board The board state.
-     * @param r_start The starting row of the window.
-     * @param c_start The starting column of the window.
-     * @param dr The row direction delta (0, 1, 1, or -1).
-     * @param dc The column direction delta (1, 0, 1, or 1).
-     * @param player The player we are scoring this window for.
-     * @return The score for this window for this specific player.
-     */
-    private int evaluateWindow(Board board, int r_start, int c_start, int dr, int dc, int player) {
-        int playerCount = 0;
-        int opponentCount = 0;
 
-        // Count the pieces for each player within this 5-cell window
-        for (int i = 0; i < winStreak; i++) {
-            int cell = board.getCell(r_start + i * dr, c_start + i * dc);
+    private int evaluateLine(Board board, int r, int c, int dr, int dc, int player) {
+        int totalScore = 0;
+        int consecutive = 0;
+        int openEnds = 0;
+        boolean leftOpen = false;
+
+        int row = r;
+        int col = c;
+
+        // Проходим по всей линии
+        while (board.isValid(row, col)) {
+            int cell = board.getCell(row, col);
+
             if (cell == player) {
-                playerCount++;
-            } else if (cell != Board.EMPTY) {
-                opponentCount++;
+                // Продолжаем последовательность
+                consecutive++;
+            } else {
+                // Последовательность прервана
+                if (consecutive > 0) {
+                    // Проверяем правый конец
+                    boolean rightOpen = (cell == Board.EMPTY);
+
+                    // Оцениваем найденную последовательность
+                    totalScore += scorePattern(consecutive, leftOpen, rightOpen);
+
+                    consecutive = 0;
+                }
+
+                // Запоминаем, открыт ли левый конец следующей последовательности
+                leftOpen = (cell == Board.EMPTY);
             }
+
+            row += dr;
+            col += dc;
         }
 
-        // If pieces from both players are in this window,
-        // it's a "dead" or "blocked" window and represents no threat.
-        if (playerCount > 0 && opponentCount > 0) {
-            return 0;
+        // Оцениваем последнюю последовательность
+        if (consecutive > 0) {
+            totalScore += scorePattern(consecutive, leftOpen, false);
         }
 
-        // The window contains pieces from only this player (or is empty)
-        // Assign score based on the number of pieces.
-        return switch (playerCount) {
-            case 5 -> FIVE_IN_ROW;
-            case 4 -> FOUR_IN_ROW;
-            case 3 -> THREE_IN_ROW;
-            case 2 -> TWO_IN_ROW;
-            default -> 0; // 0 or 1 piece
+        return totalScore;
+    }
+
+    /**
+     * Оценивает паттерн по длине и открытым концам
+     */
+    private int scorePattern(int length, boolean leftOpen, boolean rightOpen) {
+        if (length >= 5) {
+            return FIVE;
+        }
+
+        boolean open = leftOpen && rightOpen;
+        boolean halfOpen = leftOpen || rightOpen;
+
+        return switch (length) {
+            case 4 -> open ? OPEN_FOUR : (halfOpen ? FOUR : 0);
+            case 3 -> open ? OPEN_THREE : (halfOpen ? THREE : 0);
+            case 2 -> open ? OPEN_TWO : (halfOpen ? TWO : 0);
+            default -> 0;
         };
     }
+
 }

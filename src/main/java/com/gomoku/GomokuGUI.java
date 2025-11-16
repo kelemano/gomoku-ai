@@ -28,24 +28,20 @@ public class GomokuGUI extends Application {
     private Game game; // The Controller
     private GridPane boardGrid; // The visual grid
     private Label statusLabel; // Shows "Your turn" or "AI is thinking"
-    private Circle statusIcon;
+    private Button newGameButton; // НОВОЕ
     private Circle lastMoveMarker = null;
 
     // We need a 2D array of StackPanes to easily add pieces (Circles) to them
     private final StackPane[][] cellPanes = new StackPane[BOARD_SIZE][BOARD_SIZE];
 
-    private Pane overlayPane;
 
     @Override
     public void start(Stage primaryStage) {
         // 1. Create the main layout
         BorderPane root = new BorderPane();
 
-        // 2. Create the status label at the top
-        statusLabel = new Label("Welcome to Gomoku! Your turn.");
-        statusLabel.getStyleClass().add("status-label");
-        root.setTop(statusLabel);
-        BorderPane.setAlignment(statusLabel, Pos.CENTER);
+        HBox topPanel = createTopPanel();
+        root.setTop(topPanel);
 
         // 3. Create the game board in the center
         boardGrid = createBoardGrid();
@@ -55,14 +51,34 @@ public class GomokuGUI extends Application {
         game = new Game(this);
 
         // 5. Create and set the scene
-        Scene scene = new Scene(root, (BOARD_SIZE * CELL_SIZE) + 40, (BOARD_SIZE * CELL_SIZE) + 80);
-
+        Scene scene = new Scene(root, (BOARD_SIZE * CELL_SIZE) + 40, (BOARD_SIZE * CELL_SIZE) + 120);
         scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
 
         primaryStage.setTitle("Gomoku AI");
         primaryStage.setScene(scene);
         primaryStage.setResizable(false);
         primaryStage.show();
+    }
+
+    /**
+     * НОВЫЙ МЕТОД: Создаёт верхнюю панель со статусом и кнопкой
+     */
+    private HBox createTopPanel() {
+        HBox topPanel = new HBox(20);
+        topPanel.setAlignment(Pos.CENTER);
+        topPanel.setPadding(new Insets(15));
+
+        statusLabel = new Label("Welcome to Gomoku! Your turn.");
+        statusLabel.getStyleClass().add("status-label");
+
+        newGameButton = new Button("🔄 New Game");
+        newGameButton.getStyleClass().add("new-game-button");
+        newGameButton.setOnAction(e -> {
+            game.resetGame();
+        });
+
+        topPanel.getChildren().addAll(statusLabel, newGameButton);
+        return topPanel;
     }
 
     /**
@@ -125,10 +141,24 @@ public class GomokuGUI extends Application {
         });
     }
 
+    /**
+     * НОВЫЙ МЕТОД: Очищает доску для новой игры
+     */
+    public void clearBoard() {
+        Platform.runLater(() -> {
+            for (int r = 0; r < BOARD_SIZE; r++) {
+                for (int c = 0; c < BOARD_SIZE; c++) {
+                    cellPanes[r][c].getChildren().clear();
+                }
+            }
+            lastMoveMarker = null;
+        });
+    }
+
 
     public void updateStatus(String text) {
         Platform.runLater(() -> statusLabel.setText(text));
-}
+    }
 
 
     /**

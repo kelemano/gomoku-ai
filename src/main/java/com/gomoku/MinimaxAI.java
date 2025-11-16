@@ -27,11 +27,15 @@ public class MinimaxAI {
     private final GameLogic logic;
     private final int boardSize;
     private final Evaluator evaluator;
+    private final ThreatSpaceSearch threatSearch;
 
     // A score far greater than any heuristic evaluation, used to represent a forced win.
     private static final int WIN_SCORE = 1000000;
     // The radius (in cells) around existing pieces to search for valid moves.
     private static final int MOVE_GENERATION_RADIUS = 2;
+
+    private int nodesEvaluated = 0;
+    private int pruneCount = 0;
 
     /**
      * A simple inner class to represent a move (a coordinate).
@@ -83,6 +87,7 @@ public class MinimaxAI {
         this.logic = logic;
         this.boardSize = boardSize;
         this.evaluator = new Evaluator(logic, 5, boardSize, aiPlayer, opponent);
+        this.threatSearch = new ThreatSpaceSearch(null, logic, boardSize);
     }
 
     /**
@@ -91,52 +96,71 @@ public class MinimaxAI {
      * @return An integer array [row, col] representing the best move.
      */
     public int[] findBestMove(Board board) {
+        nodesEvaluated = 0;
+        pruneCount = 0;
+
+        long startTime = System.currentTimeMillis();
+
+        // НОВОЕ: Сначала проверяем критические угрозы
+        ThreatSpaceSearch ts = new ThreatSpaceSearch(board, logic, boardSize);
+        List<ThreatSpaceSearch.Move> threats = ts.findThreats(aiPlayer, opponent);
+
+        // Если есть форсирующие ходы, рассматриваем только их
+        List<Move> possibleMoves;
+        if (!threats.isEmpty()) {
+            possibleMoves = new ArrayList<>();
+            for (ThreatSpaceSearch.Move t : threats) {
+                possibleMoves.add(new Move(t.r, t.c));
+            }
+            System.out.println("🎯 Threat space reduced to " + possibleMoves.size() + " moves");
+        } else {
+            // Иначе используем обычную генерацию ходов
+            possibleMoves = getRelevantMoves(board);
+        }
+
         int bestScore = Integer.MIN_VALUE;
         Move bestMove = null;
 
-        // 1. Generate only relevant moves (near existing pieces)
-        List<Move> possibleMoves = getRelevantMoves(board);
+        // Быстрая проверка на немедленный выигрыш
+        for (Move move : possibleMoves) {
+            board.setCell(move.r, move.c, aiPlayer);
+            if (logic.checkWin(move.r, move.c, aiPlayer)) {
+                board.setCell(move.r, move.c, Board.EMPTY);
+                System.out.println("✓ Immediate win found!");
+                return new int[]{move.r, move.c};
+            }
+            board.setCell(move.r, move.c, Board.EMPTY);
+        }
 
-        // 2. Score and sort these moves for optimal pruning
+        // Сортируем ходы для лучшего pruning
         List<MoveScore> scoredMoves = new ArrayList<>();
         for (Move move : possibleMoves) {
             board.setCell(move.r, move.c, aiPlayer);
-
-            // Check for an immediate, game-winning move
-            if (logic.checkWin(move.r, move.c, aiPlayer)) {
-                board.setCell(move.r, move.c, Board.EMPTY); // Undo
-                return new int[]{move.r, move.c};
-            }
-
-            // Get the shallow heuristic score for this move
             scoredMoves.add(new MoveScore(move, evaluator.evaluate(board)));
-            board.setCell(move.r, move.c, Board.EMPTY); // Undo
+            board.setCell(move.r, move.c, Board.EMPTY);
         }
-
-        // Sort moves from best (highest score) to worst
         scoredMoves.sort(Comparator.comparingInt((MoveScore ms) -> ms.score).reversed());
 
-        // 3. Perform the deep search (minimax) on the sorted moves
+        // Глубокий поиск
         for (MoveScore moveScore : scoredMoves) {
             Move move = moveScore.move;
-            int r = move.r;
-            int c = move.c;
 
-            // Make the move
-            board.setCell(r, c, aiPlayer);
-            // Call the recursive helper
-            int score = minimax(board, maxDepth - 1, Integer.MIN_VALUE, Integer.MAX_VALUE, false, r, c);
-            // Undo the move
-            board.setCell(r, c, Board.EMPTY);
+            board.setCell(move.r, move.c, aiPlayer);
+            int score = minimax(board, maxDepth - 1, Integer.MIN_VALUE, Integer.MAX_VALUE, false, move.r, move.c);
+            board.setCell(move.r, move.c, Board.EMPTY);
 
-            // Update the best move found so far
             if (score > bestScore) {
                 bestScore = score;
                 bestMove = move;
             }
         }
 
-        // Fallback in case no move is found (e.g., draw)
+        long elapsed = System.currentTimeMillis() - startTime;
+        System.out.println("📊 Nodes: " + nodesEvaluated +
+                " | Pruned: " + pruneCount +
+                " | Time: " + elapsed + "ms" +
+                " | Score: " + bestScore);
+
         if (bestMove == null) {
             if (!possibleMoves.isEmpty()) {
                 return new int[]{possibleMoves.get(0).r, possibleMoves.get(0).c};
@@ -159,21 +183,32 @@ public class MinimaxAI {
         // Use a Set to automatically handle duplicate moves
         Set<Move> moves = new HashSet<>();
         boolean hasAnyPiece = false;
+        int pieceCount = 0;
 
         for (int r = 0; r < boardSize; r++) {
             for (int c = 0; c < boardSize; c++) {
                 // If this cell is occupied, look at its neighbors
                 if (board.getCell(r, c) != Board.EMPTY) {
+                    pieceCount++;
+                }
+            }
+        }
+
+        // Адаптивный радиус: в начале игры - меньше, в середине - больше
+        int radius = (pieceCount < 10) ? 1 : MOVE_GENERATION_RADIUS;
+
+        for (int r = 0; r < boardSize; r++) {
+            for (int c = 0; c < boardSize; c++) {
+                if (board.getCell(r, c) != Board.EMPTY) {
                     hasAnyPiece = true;
-                    // Iterate in a square radius around the piece
-                    for (int dr = -MOVE_GENERATION_RADIUS; dr <= MOVE_GENERATION_RADIUS; dr++) {
-                        for (int dc = -MOVE_GENERATION_RADIUS; dc <= MOVE_GENERATION_RADIUS; dc++) {
-                            if (dr == 0 && dc == 0) continue; // Skip self
+
+                    for (int dr = -radius; dr <= radius; dr++) {
+                        for (int dc = -radius; dc <= radius; dc++) {
+                            if (dr == 0 && dc == 0) continue;
 
                             int nr = r + dr;
                             int nc = c + dc;
 
-                            // If the neighbor is valid and empty, add it to the set
                             if (board.isValid(nr, nc) && board.getCell(nr, nc) == Board.EMPTY) {
                                 moves.add(new Move(nr, nc));
                             }
@@ -183,7 +218,6 @@ public class MinimaxAI {
             }
         }
 
-        // If the board is completely empty, just play in the center.
         if (!hasAnyPiece) {
             moves.add(new Move(boardSize / 2, boardSize / 2));
         }
@@ -220,7 +254,7 @@ public class MinimaxAI {
      * @return The heuristic score for this board state.
      */
     private int minimax(Board board, int depth, int alpha, int beta, boolean isMaximizingPlayer, int lastR, int lastC) {
-
+        nodesEvaluated++;
         // 1. Terminal State Check (Win/Loss)
         // Check if the *previous* move (by the other player) resulted in a win.
         if (isMaximizingPlayer) {
@@ -237,20 +271,39 @@ public class MinimaxAI {
             }
         }
 
-        // 2. Base Case Check (Depth Limit or Draw)
-        List<Move> possibleMoves = getRelevantMoves(board);
-        if (depth == 0 || possibleMoves.isEmpty()) {
-            // Reached search limit or a draw, return the static evaluation
+        // Достигли глубины или ничья
+        if (depth == 0) {
             return evaluator.evaluate(board);
         }
+
+        // НОВОЕ: Генерируем ходы с учётом угроз
+        ThreatSpaceSearch ts = new ThreatSpaceSearch(board, logic, boardSize);
+        int currentPlayer = isMaximizingPlayer ? aiPlayer : opponent;
+        int currentOpponent = isMaximizingPlayer ? opponent : aiPlayer;
+
+        List<ThreatSpaceSearch.Move> threats = ts.findThreats(currentPlayer, currentOpponent);
+
+        List<Move> possibleMoves;
+        if (!threats.isEmpty()) {
+            possibleMoves = new ArrayList<>();
+            for (ThreatSpaceSearch.Move t : threats) {
+                possibleMoves.add(new Move(t.r, t.c));
+            }
+        } else {
+            possibleMoves = getRelevantMoves(board);
+        }
+
+        if (possibleMoves.isEmpty()) {
+            return evaluator.evaluate(board);
+        }
+
 
         // 3. Move Ordering
         // Sort moves at this depth to maximize pruning efficiency.
         List<MoveScore> scoredMoves = new ArrayList<>();
-        int playerToMove = isMaximizingPlayer ? aiPlayer : opponent;
 
         for (Move move : possibleMoves) {
-            board.setCell(move.r, move.c, playerToMove);
+            board.setCell(move.r, move.c, currentPlayer);
             scoredMoves.add(new MoveScore(move, evaluator.evaluate(board)));
             board.setCell(move.r, move.c, Board.EMPTY); // Undo
         }
@@ -276,6 +329,7 @@ public class MinimaxAI {
                 maxEval = Math.max(maxEval, eval);
                 alpha = Math.max(alpha, eval);
                 if (beta <= alpha) {
+                    pruneCount++;
                     break; // Beta Cutoff (Pruning)
                 }
             }
@@ -295,6 +349,7 @@ public class MinimaxAI {
                 minEval = Math.min(minEval, eval);
                 beta = Math.min(beta, eval);
                 if (beta <= alpha) {
+                    pruneCount++;
                     break; // Alpha Cutoff (Pruning)
                 }
             }
