@@ -1,0 +1,18 @@
+# Compiled output
+/build/
+/out/
+
+# Gradle cache
+.gradle/
+
+# IntelliJ IDEA specific files
+.idea/
+*.iml
+*.iws
+
+# Log files
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
