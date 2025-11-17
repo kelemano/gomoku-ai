@@ -49,10 +49,10 @@ public class Game {
             return;
         }
         initializeGame();
-        gui.clearBoard(); // Очищаем доску в GUI
-        gui.updateStatus("New game! Your turn.");
+        gui.clearBoard();
+        gui.updateStatus("Your turn");
 
-        System.out.println("🔄 Game reset!");
+        System.out.println("Game reset");
     }
 
     /**
@@ -81,9 +81,9 @@ public class Game {
                 List<int[]> winningLine = logic.findWinningLine(r, c, HUMAN_PLAYER);
                 gui.drawWinningLine(winningLine);
 
-                gui.showGameEndMessage(" \uD83C\uDF89 YOU WIN! \uD83C\uDF89");
+                gui.showGameEndMessage("You win");
             } else if (isBoardFull()) {
-                gui.showGameEndMessage("\uD83E\uDD1D IT'S A DRAW! \uD83E\uDD1D");
+                gui.showGameEndMessage("Draw");
                 gameRunning = false;
             } else {
                 // 4. Pass Turn to AI
@@ -101,7 +101,7 @@ public class Game {
         if (!gameRunning) return;
 
         aiIsThinking = true;
-        gui.updateStatus("\uD83E\uDD16 AI's turn! Thinking...");
+        gui.updateStatus("AI's turn · Thinking...");
 
 
         Task<int[]> aiMoveTask = new Task<>() {
@@ -126,25 +126,23 @@ public class Game {
             // 3. Check Game State
             if (logic.checkWin(r, c, AI_PLAYER)) {
                 gameRunning = false;
-                // Находим и рисуем линию
                 List<int[]> winningLine = logic.findWinningLine(r, c, AI_PLAYER);
                 gui.drawWinningLine(winningLine);
-                // Показываем сообщение
-                gui.showGameEndMessage("\uD83E\uDD16 AI WINS! \uD83E\uDD16");
+                gui.showGameEndMessage("AI wins");
             } else if (isBoardFull()) {
-                gui.showGameEndMessage("\uD83E\uDD1D IT'S A DRAW! \uD83E\uDD1D");
+                gui.showGameEndMessage("Draw");
                 gameRunning = false;
             } else {
                 // 4. Pass Turn to Human
                 currentPlayer = HUMAN_PLAYER;
-                gui.updateStatus("Your turn!");
+                gui.updateStatus("Your turn");
             }
             aiIsThinking = false;
         });
 
         aiMoveTask.setOnFailed(event -> {
-            System.err.println("❌ AI error: " + aiMoveTask.getException());
-            gui.updateStatus("AI error! Your turn.");
+            System.err.println("AI error: " + aiMoveTask.getException());
+            gui.updateStatus("AI error · Your turn");
             aiIsThinking = false;
             currentPlayer = HUMAN_PLAYER;
         });
