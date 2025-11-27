@@ -140,21 +140,25 @@
     -fx-scale-y: 1.02;
 }
 
-/* ===== GAME BOARD ===== */
+/* ===== GAME BOARD - SAKURA STYLE ===== */
 .game-board {
-    -fx-background-color: linear-gradient(to bottom right, #F5E6D3, #E8D5C0);
+    -fx-background-color: linear-gradient(to bottom right, #FFF8F8, #FFE5E5, #FFD5D5);
     -fx-padding: 10;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 20, 0, 0, 5);
+    -fx-background-radius: 12;
+    -fx-border-color: linear-gradient(to bottom, #D2691E, #8B4513);
+    -fx-border-width: 4;
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(139, 69, 19, 0.3), 15, 0, 0, 3);
 }
 
 .grid-cell {
     -fx-background-color: transparent;
-    -fx-border-color: rgba(139, 115, 85, 0.3);
+    -fx-border-color: rgba(139, 69, 19, 0.2);
     -fx-border-width: 0.5;
 }
 
 .grid-cell:hover {
-    -fx-background-color: rgba(139, 115, 85, 0.05);
+    -fx-background-color: rgba(255, 182, 193, 0.15);
 }
 
 /* ===== GAME PIECES ===== */

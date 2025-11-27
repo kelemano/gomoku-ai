@@ -39,9 +39,10 @@ public class WelcomeScreen {
     }
 
     private void createScreens() {
-        // Container for switching screens
         contentContainer = new StackPane();
-        contentContainer.getStyleClass().add("welcome-screen");
+        contentContainer.setStyle(
+                "-fx-background-color: linear-gradient(to bottom, #FAF8F5, #F0EBE3);" // Пудровый нюд
+        );
 
         // Create all screens
         mainMenuScreen = createMainMenu();
@@ -505,7 +506,10 @@ public class WelcomeScreen {
         shapeLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #5A5A5A;");
 
         playerShapeCombo = new ComboBox<>();
-        playerShapeCombo.getItems().addAll("Circle", "Square", "Diamond", "Star");
+        playerShapeCombo.getItems().addAll(
+                "Circle", "Flat Stone", "Hexagon", "Diamond",
+                "Star", "Heart", "Flower", "Rounded Square"
+        );
         playerShapeCombo.setValue("Circle");
 
         Label colorLabel = new Label("Color:");
@@ -513,10 +517,13 @@ public class WelcomeScreen {
 
         playerColorCombo = new ComboBox<>();
         playerColorCombo.getItems().addAll(
-                "Black", "Dark Brown", "Navy Blue",
-                "Dark Green", "Purple", "Crimson"
+                // Классические тёмные
+                "Obsidian Black", "Charcoal Gray", "Slate Blue", "Espresso Brown",
+                // Яркие тёмные
+                "Ruby Red", "Sapphire Blue", "Emerald Green",
+                "Amethyst Purple", "Topaz Orange", "Turquoise"
         );
-        playerColorCombo.setValue("Black");
+        playerColorCombo.setValue("Obsidian Black");
 
         playerControls.getChildren().addAll(shapeLabel, playerShapeCombo, colorLabel, playerColorCombo);
         playerBox.getChildren().addAll(playerLabel, playerControls);
@@ -540,7 +547,10 @@ public class WelcomeScreen {
         shapeLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #5A5A5A;");
 
         aiShapeCombo = new ComboBox<>();
-        aiShapeCombo.getItems().addAll("Circle", "Square", "Diamond", "Star");
+        aiShapeCombo.getItems().addAll(
+                "Circle", "Flat Stone", "Hexagon", "Diamond",
+                "Star", "Heart", "Flower", "Rounded Square"
+        );
         aiShapeCombo.setValue("Circle");
 
         Label colorLabel = new Label("Color:");
@@ -548,16 +558,21 @@ public class WelcomeScreen {
 
         aiColorCombo = new ComboBox<>();
         aiColorCombo.getItems().addAll(
-                "White", "Cream", "Light Blue",
-                "Mint Green", "Pink", "Light Yellow"
+                // Классические светлые
+                "Pearl White", "Ivory Cream", "Soft Beige", "Silver Gray",
+                // Яркие пастельные
+                "Rose Pink", "Sky Blue", "Mint Green", "Lavender",
+                "Peach", "Lemon Yellow", "Coral"
         );
-        aiColorCombo.setValue("White");
+        aiColorCombo.setValue("Pearl White");
 
         aiControls.getChildren().addAll(shapeLabel, aiShapeCombo, colorLabel, aiColorCombo);
         aiBox.getChildren().addAll(aiLabel, aiControls);
 
         return aiBox;
     }
+
+
 
     private Region createDivider() {
         Region divider = new Region();
