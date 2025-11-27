@@ -1,20 +1,20 @@
 /* =====================================================
-   GOMOKU GAME - COMPLETE STYLES
-   Zen-inspired minimalist design
+   GOMOKU GAME - PASTEL BEIGE & ROSE THEME
+   Elegant warm minimalist design with responsiveness
    ===================================================== */
 
 /* ===== ROOT & GENERAL ===== */
-.root {
+. root {
     -fx-font-family: "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-    -fx-background-color: #FAFAFA;
+    -fx-background-color: #FBF8F4;
 }
 
 /* ===== WELCOME SCREEN ===== */
 .welcome-screen {
-    -fx-background-color: linear-gradient(to bottom, #FAFAFA, #F5F5F5);
+    -fx-background-color: linear-gradient(to bottom right, #FBF8F4, #F5EDE4, #EFE6DB);
 }
 
-.welcome-content {
+. welcome-content {
     -fx-background-color: transparent;
 }
 
@@ -23,77 +23,89 @@
     -fx-border-color: transparent;
 }
 
-.welcome-scroll-pane > .viewport {
+. welcome-scroll-pane > .viewport {
     -fx-background-color: transparent;
 }
 
-.welcome-scroll-pane > .scroll-bar {
+. welcome-scroll-pane > .scroll-bar {
     -fx-background-color: transparent;
 }
 
 /* ===== HEADER STYLES ===== */
 .title-japanese {
-    -fx-font-size: 48px;
+    -fx-font-size: 52px;
     -fx-font-weight: 300;
-    -fx-text-fill: #2D2D2D;
+    -fx-text-fill: #B8A094;
     -fx-letter-spacing: 8px;
 }
 
 .title-english {
-    -fx-font-size: 36px;
+    -fx-font-size: 38px;
     -fx-font-weight: 200;
-    -fx-text-fill: #5A5A5A;
-    -fx-letter-spacing: 12px;
+    -fx-text-fill: #C4A4A4;
+    -fx-letter-spacing: 14px;
 }
 
 .subtitle-zen {
-    -fx-font-size: 13px;
+    -fx-font-size: 14px;
     -fx-font-weight: 300;
-    -fx-text-fill: #8A8A8A;
-    -fx-letter-spacing: 3px;
+    -fx-text-fill: #BEB0A7;
+    -fx-letter-spacing: 4px;
 }
 
 /* ===== ZEN PIECES ===== */
-.zen-piece-black {
-    -fx-fill: #2D2D2D;
-    -fx-stroke: #1A1A1A;
-    -fx-stroke-width: 1;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 4, 0, 0, 2);
+. zen-piece-black {
+    -fx-fill: #8B7B7B;
+    -fx-stroke: #6B5B5B;
+    -fx-stroke-width: 1.5;
+    -fx-effect: dropshadow(gaussian, rgba(139,123,123,0.3), 6, 0, 0, 2);
 }
 
-.zen-piece-white {
-    -fx-fill: #FFFFFF;
-    -fx-stroke: #E0E0E0;
-    -fx-stroke-width: 1;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 2);
+. zen-piece-white {
+    -fx-fill: #FFF9F5;
+    -fx-stroke: #E8DED8;
+    -fx-stroke-width: 1.5;
+    -fx-effect: dropshadow(gaussian, rgba(200,180,170,0.2), 6, 0, 0, 2);
 }
 
 /* ===== DIVIDER ===== */
-.zen-divider {
-    -fx-background-color: rgba(139, 115, 85, 0.2);
+. zen-divider {
+    -fx-background-color: linear-gradient(to right, transparent, #D4C4BC, transparent);
 }
 
 /* ===== SECTION TITLE ===== */
 .zen-section-title {
     -fx-font-size: 18px;
     -fx-font-weight: 400;
-    -fx-text-fill: #3A3A3A;
+    -fx-text-fill: #9B8B83;
     -fx-letter-spacing: 4px;
 }
 
 /* ===== RULES SECTION ===== */
 .zen-rule-number {
-    -fx-font-size: 14px;
-    -fx-font-weight: 300;
-    -fx-text-fill: #B0B0B0;
-    -fx-letter-spacing: 1px;
+    -fx-font-size: 22px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #D4B8B8;
 }
 
 .zen-rule-text {
     -fx-font-size: 14px;
-    -fx-font-weight: 300;
-    -fx-text-fill: #5A5A5A;
-    -fx-line-spacing: 2px;
+    -fx-font-weight: 400;
+    -fx-text-fill: #7A6B65;
+    -fx-line-spacing: 3px;
+}
+
+. rule-card {
+    -fx-background-color: rgba(255, 252, 250, 0.8);
+    -fx-background-radius: 16;
+    -fx-border-color: #EBE0DA;
+    -fx-border-width: 1px;
+    -fx-border-radius: 16;
+    -fx-effect: dropshadow(gaussian, rgba(180,160,150,0.1), 8, 0, 0, 2);
+}
+
+. rule-icon {
+    -fx-font-size: 24px;
 }
 
 /* ===== EXAMPLES SECTION ===== */
@@ -102,80 +114,153 @@
 }
 
 .zen-example-cell {
-    -fx-background-color: #FFFFFF;
-    -fx-border-color: rgba(139, 115, 85, 0.2);
+    -fx-background-color: #FFFBF8;
+    -fx-border-color: #E8DDD6;
     -fx-border-width: 0.5px;
 }
 
-.zen-example-piece {
-    -fx-fill: #2D2D2D;
-    -fx-stroke: #1A1A1A;
-    -fx-stroke-width: 0.8;
+. zen-example-piece {
+    -fx-fill: #8B7B7B;
+    -fx-stroke: #6B5B5B;
+    -fx-stroke-width: 1;
 }
 
-.zen-example-label {
+. zen-example-label {
     -fx-font-size: 12px;
-    -fx-font-weight: 300;
-    -fx-text-fill: #8A8A8A;
+    -fx-font-weight: 400;
+    -fx-text-fill: #A89890;
     -fx-letter-spacing: 1px;
 }
 
-/* ===== START BUTTON (OLD STYLE) ===== */
-.zen-start-button {
-    -fx-background-color: #2D2D2D;
-    -fx-text-fill: #FFFFFF;
-    -fx-font-size: 16px;
-    -fx-font-weight: 400;
-    -fx-letter-spacing: 4px;
-    -fx-padding: 16px 60px;
-    -fx-background-radius: 0;
-    -fx-cursor: hand;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 3);
+. example-card {
+    -fx-background-color: rgba(255, 252, 250, 0.7);
+    -fx-background-radius: 16;
+    -fx-border-color: #EBE0DA;
+    -fx-border-width: 1px;
+    -fx-border-radius: 16;
+    -fx-effect: dropshadow(gaussian, rgba(180,160,150,0.08), 6, 0, 0, 2);
 }
 
-.zen-start-button:hover {
-    -fx-background-color: #1A1A1A;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 12, 0, 0, 5);
+/* ===== PRIMARY BUTTON (Play/Start) ===== */
+.primary-button {
+    -fx-background-color: linear-gradient(to bottom, #C9A9A9, #B89999);
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 16px;
+    -fx-font-weight: 500;
+    -fx-letter-spacing: 3px;
+    -fx-padding: 16px 45px;
+    -fx-background-radius: 30;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(184,153,153,0.4), 12, 0, 0, 4);
+}
+
+. primary-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #B89999, #A88989);
+    -fx-effect: dropshadow(gaussian, rgba(168,137,137,0.5), 16, 0, 0, 6);
     -fx-scale-x: 1.02;
     -fx-scale-y: 1.02;
 }
 
-/* ===== GAME BOARD - SAKURA STYLE ===== */
-.game-board {
-    -fx-background-color: linear-gradient(to bottom right, #FFF8F8, #FFE5E5, #FFD5D5);
-    -fx-padding: 10;
-    -fx-background-radius: 12;
-    -fx-border-color: linear-gradient(to bottom, #D2691E, #8B4513);
-    -fx-border-width: 4;
-    -fx-border-radius: 12;
-    -fx-effect: dropshadow(gaussian, rgba(139, 69, 19, 0.3), 15, 0, 0, 3);
+/* ===== SECONDARY BUTTON ===== */
+. secondary-button {
+    -fx-background-color: rgba(255, 252, 250, 0.9);
+    -fx-text-fill: #8B7B75;
+    -fx-font-size: 15px;
+    -fx-font-weight: 400;
+    -fx-letter-spacing: 2px;
+    -fx-padding: 14px 35px;
+    -fx-background-radius: 25;
+    -fx-cursor: hand;
+    -fx-border-color: #E0D5CF;
+    -fx-border-width: 1.5px;
+    -fx-border-radius: 25;
+    -fx-effect: dropshadow(gaussian, rgba(180,160,150,0.1), 8, 0, 0, 2);
 }
 
-.grid-cell {
+. secondary-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 1);
+    -fx-text-fill: #6B5B55;
+    -fx-border-color: #D4C4BC;
+    -fx-effect: dropshadow(gaussian, rgba(180,160,150,0.18), 12, 0, 0, 4);
+    -fx-scale-x: 1.01;
+    -fx-scale-y: 1.01;
+}
+
+/* ===== BACK BUTTON ===== */
+.back-button {
     -fx-background-color: transparent;
-    -fx-border-color: rgba(139, 69, 19, 0.2);
+    -fx-text-fill: #B0A098;
+    -fx-font-size: 14px;
+    -fx-font-weight: 300;
+    -fx-padding: 8px 16px;
+    -fx-cursor: hand;
+}
+
+.back-button:hover {
+    -fx-background-color: rgba(212, 196, 188, 0.15);
+    -fx-text-fill: #8B7B75;
+    -fx-background-radius: 15;
+}
+
+/* ===== CUSTOMIZATION CARD ===== */
+.customize-card {
+    -fx-background-color: rgba(255, 252, 250, 0.75);
+    -fx-background-radius: 20;
+    -fx-border-color: #EBE0DA;
+    -fx-border-width: 1px;
+    -fx-border-radius: 20;
+    -fx-effect: dropshadow(gaussian, rgba(180,160,150,0.1), 10, 0, 0, 3);
+}
+
+. customize-label {
+    -fx-font-size: 16px;
+    -fx-font-weight: 500;
+    -fx-text-fill: #8B7B75;
+    -fx-letter-spacing: 1px;
+}
+
+.customize-sublabel {
+    -fx-font-size: 13px;
+    -fx-font-weight: 300;
+    -fx-text-fill: #A09088;
+}
+
+/* ===== GAME BOARD ===== */
+.game-board {
+    -fx-background-color: linear-gradient(to bottom right, #FBF8F4, #F0E6E0);
+    -fx-padding: 10;
+    -fx-background-radius: 12;
+    -fx-border-color: #D4C4BC;
+    -fx-border-width: 3;
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(180, 160, 150, 0.2), 15, 0, 0, 4);
+}
+
+. grid-cell {
+    -fx-background-color: transparent;
+    -fx-border-color: rgba(180, 160, 150, 0.25);
     -fx-border-width: 0.5;
 }
 
 .grid-cell:hover {
-    -fx-background-color: rgba(255, 182, 193, 0.15);
+    -fx-background-color: rgba(212, 196, 188, 0.15);
 }
 
 /* ===== GAME PIECES ===== */
 .player-x-piece {
-    -fx-fill: #2D2D2D;
-    -fx-stroke: #1A1A1A;
+    -fx-fill: #8B7B7B;
+    -fx-stroke: #6B5B5B;
     -fx-stroke-width: 1.5;
 }
 
 .player-o-piece {
-    -fx-fill: #FFFFFF;
-    -fx-stroke: #D0D0D0;
+    -fx-fill: #FFF9F5;
+    -fx-stroke: #E0D5CF;
     -fx-stroke-width: 1.5;
 }
 
 .last-move-highlight {
-    -fx-stroke: #8B7355;
+    -fx-stroke: #C9A9A9;
     -fx-stroke-width: 2.5;
 }
 
@@ -183,12 +268,12 @@
 .status-label {
     -fx-font-size: 16px;
     -fx-font-weight: 300;
-    -fx-text-fill: #3A3A3A;
+    -fx-text-fill: #8B7B75;
     -fx-letter-spacing: 2px;
 }
 
 .new-game-button {
-    -fx-background-color: #2D2D2D;
+    -fx-background-color: linear-gradient(to bottom, #C9A9A9, #B89999);
     -fx-text-fill: #FFFFFF;
     -fx-font-size: 13px;
     -fx-font-weight: 400;
@@ -196,73 +281,72 @@
     -fx-padding: 10px 24px;
     -fx-background-radius: 20;
     -fx-cursor: hand;
-    -fx-border-color: #2D2D2D;
-    -fx-border-width: 1px;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
     -fx-border-radius: 20;
 }
 
 .new-game-button:hover {
-    -fx-background-color: #1A1A1A;
-    -fx-border-color: #1A1A1A;
+    -fx-background-color: linear-gradient(to bottom, #B89999, #A88989);
 }
 
 /* ===== MENU BUTTON IN GAME ===== */
 .menu-button-small {
-    -fx-background-color: rgba(250, 250, 250, 0.8);
-    -fx-text-fill: #5A5A5A;
+    -fx-background-color: rgba(255, 252, 250, 0.9);
+    -fx-text-fill: #8B7B75;
     -fx-font-size: 13px;
     -fx-font-weight: 300;
     -fx-letter-spacing: 1px;
     -fx-padding: 10px 20px;
     -fx-background-radius: 20;
     -fx-cursor: hand;
-    -fx-border-color: rgba(90, 90, 90, 0.2);
+    -fx-border-color: #E0D5CF;
     -fx-border-width: 1px;
     -fx-border-radius: 20;
 }
 
 .menu-button-small:hover {
-    -fx-background-color: rgba(240, 240, 240, 1);
-    -fx-text-fill: #2D2D2D;
-    -fx-border-color: rgba(90, 90, 90, 0.3);
+    -fx-background-color: rgba(255, 255, 255, 1);
+    -fx-text-fill: #6B5B55;
+    -fx-border-color: #D4C4BC;
 }
 
-/* ===== GAME END TOAST - COMPACT ===== */
+/* ===== GAME END TOAST ===== */
 .game-end-toast {
-    -fx-background-color: rgba(255, 255, 255, 0.98);
-    -fx-background-radius: 12;
-    -fx-padding: 16 20;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 15, 0, 0, 3);
-    -fx-border-color: rgba(139, 115, 85, 0.12);
-    -fx-border-width: 1;
-    -fx-border-radius: 12;
+    -fx-background-color: rgba(255, 252, 250, 0.98);
+    -fx-background-radius: 16;
+    -fx-padding: 20 24;
+    -fx-effect: dropshadow(gaussian, rgba(139,123,123,0.25), 20, 0, 0, 5);
+    -fx-border-color: #E0D5CF;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 16;
 }
 
 .toast-message {
-    -fx-font-size: 15px;
+    -fx-font-size: 16px;
     -fx-font-weight: 500;
-    -fx-text-fill: #2D2D2D;
-    -fx-letter-spacing: 0.5px;
+    -fx-text-fill: #8B7B75;
+    -fx-letter-spacing: 1px;
 }
 
-.toast-button {
-    -fx-background-color: #2D2D2D;
+. toast-button {
+    -fx-background-color: linear-gradient(to bottom, #C9A9A9, #B89999);
     -fx-text-fill: #FFFFFF;
     -fx-font-size: 11px;
     -fx-font-weight: 400;
     -fx-letter-spacing: 1px;
-    -fx-padding: 7px 16px;
+    -fx-padding: 8px 18px;
     -fx-background-radius: 12;
     -fx-cursor: hand;
 }
 
-.toast-button:hover {
-    -fx-background-color: #1A1A1A;
+. toast-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #B89999, #A88989);
 }
 
 /* ===== WINNING LINE ===== */
-.winning-line {
-    -fx-stroke: #8B7355;
+. winning-line {
+    -fx-stroke: #C9A9A9;
     -fx-stroke-width: 3;
     -fx-stroke-line-cap: round;
     -fx-opacity: 0.9;
@@ -270,26 +354,34 @@
 
 /* ===== COMBO BOX STYLES ===== */
 .combo-box {
-    -fx-background-color: #FFFFFF;
-    -fx-border-color: rgba(139, 115, 85, 0.2);
+    -fx-background-color: #FFFCFA;
+    -fx-border-color: #E0D5CF;
     -fx-border-width: 1px;
-    -fx-border-radius: 5px;
-    -fx-background-radius: 5px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
     -fx-font-size: 12px;
+    -fx-cursor: hand;
 }
 
 .combo-box:hover {
-    -fx-border-color: rgba(139, 115, 85, 0.4);
+    -fx-border-color: #D4C4BC;
 }
 
-.combo-box .list-cell {
-    -fx-background-color: #FFFFFF;
-    -fx-text-fill: #2D2D2D;
-    -fx-padding: 5px 10px;
+. combo-box . list-cell {
+    -fx-background-color: #FFFCFA;
+    -fx-text-fill: #8B7B75;
+    -fx-padding: 6px 12px;
 }
 
 .combo-box .list-cell:hover {
-    -fx-background-color: rgba(139, 115, 85, 0.1);
+    -fx-background-color: rgba(212, 196, 188, 0.2);
+}
+
+. combo-box-popup . list-view {
+    -fx-background-color: #FFFCFA;
+    -fx-border-color: #E0D5CF;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
 }
 
 /* ===== SCROLL BAR ===== */
@@ -297,21 +389,54 @@
     -fx-background-color: transparent;
 }
 
-.scroll-bar .thumb {
-    -fx-background-color: rgba(139, 115, 85, 0.3);
-    -fx-background-radius: 5px;
+.scroll-bar . thumb {
+    -fx-background-color: rgba(212, 196, 188, 0.4);
+    -fx-background-radius: 6px;
 }
 
 .scroll-bar .thumb:hover {
-    -fx-background-color: rgba(139, 115, 85, 0.5);
+    -fx-background-color: rgba(212, 196, 188, 0.6);
 }
 
-.scroll-bar .track {
+. scroll-bar .track {
     -fx-background-color: transparent;
 }
 
-.scroll-bar .increment-button,
+.scroll-bar . increment-button,
 .scroll-bar .decrement-button {
     -fx-background-color: transparent;
     -fx-padding: 0;
+}
+
+/* ===== ABOUT SCREEN ===== */
+.about-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: #7A6B65;
+    -fx-text-alignment: center;
+}
+
+.about-version {
+    -fx-font-size: 12px;
+    -fx-text-fill: #B0A098;
+    -fx-letter-spacing: 1px;
+}
+
+/* ===== SCREEN TITLE ===== */
+.screen-title {
+    -fx-font-size: 28px;
+    -fx-font-weight: 300;
+    -fx-text-fill: #9B8B83;
+    -fx-letter-spacing: 4px;
+}
+
+/* ===== RULES PAGE HEADER ===== */
+.rules-header {
+    -fx-background-color: transparent;
+}
+
+.rules-subtitle {
+    -fx-font-size: 13px;
+    -fx-font-weight: 300;
+    -fx-text-fill: #B0A098;
+    -fx-letter-spacing: 2px;
 }
