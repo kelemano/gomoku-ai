@@ -4,16 +4,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * НОВЫЙ КЛАСС - создайте новый файл src/main/java/com/gomoku/ThreatSpaceSearch.java
- *
- * Этот класс находит только "угрожающие" ходы, сильно сокращая branching factor.
- * Вместо проверки всех ~50 возможных ходов, ищет только ~5-10 критических.
+ * Specialized search component for identifying critical game states (Threats).
+ * <p>
+ * This class drastically reduces the branching factor for the Minimax algorithm by
+ * filtering for "forcing" moves. Instead of evaluating all ~50 available moves,
+ * it identifies the ~5-10 moves that are strictly necessary to consider (e.g.,
+ * winning immediately, blocking an opponent's win, or creating strong attacks).
  */
 public class ThreatSpaceSearch {
     private final Board board;
     private final GameLogic logic;
     private final int boardSize;
 
+    /**
+     * Constructs the ThreatSpaceSearch.
+     *
+     * @param board     The current game board.
+     * @param logic     The game logic for win checks.
+     * @param boardSize The size of the board.
+     */
     public ThreatSpaceSearch(Board board, GameLogic logic, int boardSize) {
         this.board = board;
         this.logic = logic;
@@ -21,32 +30,39 @@ public class ThreatSpaceSearch {
     }
 
     /**
-     * Находит критические ходы для игрока
-     * @param player ID игрока
-     * @param opponent ID противника
-     * @return список приоритетных ходов
+     * Identifies critical moves for the given player.
+     * <p>
+     * Priorities:
+     * 1. Win immediately.
+     * 2. Block opponent's immediate win.
+     * 3. Create strong threats (Open Fours, Open Threes).
+     * 4. Block opponent's threats.
+     *
+     * @param player   The ID of the current player.
+     * @param opponent The ID of the opponent.
+     * @return A list of critical moves to consider.
      */
     public List<Move> findThreats(int player, int opponent) {
         List<Move> threats = new ArrayList<>();
 
-        // 1. КРИТИЧНО: Проверяем немедленный выигрыш
+        // 1. CRITICAL: Check for immediate win
         List<Move> winningMoves = findWinningMoves(player);
         if (!winningMoves.isEmpty()) {
-            return winningMoves; // Возвращаем только выигрышный ход
+            return winningMoves;
         }
 
-        // 2. КРИТИЧНО: Блокируем немедленный выигрыш противника
+        // 2. CRITICAL: Block opponent's immediate win
         List<Move> blockingMoves = findWinningMoves(opponent);
         if (!blockingMoves.isEmpty()) {
             threats.addAll(blockingMoves);
-            return threats; // Нужно обязательно блокировать
+            return threats;
         }
 
-        // 3. Ищем форсирующие ходы (открытые четвёрки/тройки)
+        // 3. Find forcing moves (creating Open Fours/Threes)
         threats.addAll(findOpenFours(player));
         threats.addAll(findOpenThrees(player));
 
-        // 4. Блокируем угрозы противника
+        // 4. Block opponent's threats
         threats.addAll(findOpenFours(opponent));
         threats.addAll(findOpenThrees(opponent));
 
@@ -54,7 +70,7 @@ public class ThreatSpaceSearch {
     }
 
     /**
-     * Находит ходы, которые дают немедленную победу
+     * Finds moves that result in an immediate win (5 in a row).
      */
     private List<Move> findWinningMoves(int player) {
         List<Move> moves = new ArrayList<>();
@@ -62,24 +78,24 @@ public class ThreatSpaceSearch {
         for (int r = 0; r < boardSize; r++) {
             for (int c = 0; c < boardSize; c++) {
                 if (board.getCell(r, c) == Board.EMPTY) {
-                    // Временно делаем ход
+                    // Simulate move
                     board.setCell(r, c, player);
 
                     if (logic.checkWin(r, c, player)) {
                         moves.add(new Move(r, c));
                     }
 
-                    // Отменяем ход
+                    // Undo move
                     board.setCell(r, c, Board.EMPTY);
                 }
             }
         }
-
         return moves;
     }
 
     /**
-     * Находит ходы, создающие открытую четвёрку (_XXXX_)
+     * Finds moves that create an Open Four pattern (_XXXX_).
+     * This is a very strong threat (guaranteed win next turn unless blocked).
      */
     private List<Move> findOpenFours(int player) {
         List<Move> moves = new ArrayList<>();
@@ -89,7 +105,6 @@ public class ThreatSpaceSearch {
                 if (board.getCell(r, c) == Board.EMPTY) {
                     board.setCell(r, c, player);
 
-                    // Проверяем, создаёт ли этот ход четвёрку с открытыми концами
                     if (hasOpenFour(r, c, player)) {
                         moves.add(new Move(r, c));
                     }
@@ -98,12 +113,11 @@ public class ThreatSpaceSearch {
                 }
             }
         }
-
         return moves;
     }
 
     /**
-     * Находит ходы, создающие открытую тройку (_XXX_)
+     * Finds moves that create an Open Three pattern (_XXX_).
      */
     private List<Move> findOpenThrees(int player) {
         List<Move> moves = new ArrayList<>();
@@ -116,27 +130,26 @@ public class ThreatSpaceSearch {
                     if (hasOpenThree(r, c, player)) {
                         moves.add(new Move(r, c));
                     }
-
                     board.setCell(r, c, Board.EMPTY);
                 }
             }
         }
-
         return moves;
     }
 
     /**
-     * Проверяет, есть ли открытая четвёрка в позиции
+     * Checks if placing a piece at (r, c) creates an Open Four.
      */
     private boolean hasOpenFour(int r, int c, int player) {
+        // Directions: Horizontal, Vertical, Diagonal, Anti-Diagonal
         int[][] directions = {{0, 1}, {1, 0}, {1, 1}, {1, -1}};
 
         for (int[] dir : directions) {
-            int count = 1;
+            int count = 1; // Start with the placed piece
             int leftOpen = 0;
             int rightOpen = 0;
 
-            // Считаем вправо
+            // Scan positive direction
             for (int i = 1; i <= 4; i++) {
                 int nr = r + dir[0] * i;
                 int nc = c + dir[1] * i;
@@ -149,11 +162,11 @@ public class ThreatSpaceSearch {
                     rightOpen = 1;
                     break;
                 } else {
-                    break;
+                    break; // Blocked by opponent
                 }
             }
 
-            // Считаем влево
+            // Scan negative direction
             for (int i = 1; i <= 4; i++) {
                 int nr = r - dir[0] * i;
                 int nc = c - dir[1] * i;
@@ -170,17 +183,16 @@ public class ThreatSpaceSearch {
                 }
             }
 
-            // Открытая четвёрка: 4 фишки и оба конца открыты
+            // Open Four: 4 pieces total, open on both ends
             if (count == 4 && leftOpen == 1 && rightOpen == 1) {
                 return true;
             }
         }
-
         return false;
     }
 
     /**
-     * Проверяет, есть ли открытая тройка в позиции
+     * Checks if placing a piece at (r, c) creates an Open Three.
      */
     private boolean hasOpenThree(int r, int c, int player) {
         int[][] directions = {{0, 1}, {1, 0}, {1, 1}, {1, -1}};
@@ -190,7 +202,7 @@ public class ThreatSpaceSearch {
             int leftOpen = 0;
             int rightOpen = 0;
 
-            // Считаем вправо
+            // Scan positive direction
             for (int i = 1; i <= 3; i++) {
                 int nr = r + dir[0] * i;
                 int nc = c + dir[1] * i;
@@ -207,7 +219,7 @@ public class ThreatSpaceSearch {
                 }
             }
 
-            // Считаем влево
+            // Scan negative direction
             for (int i = 1; i <= 3; i++) {
                 int nr = r - dir[0] * i;
                 int nc = c - dir[1] * i;
@@ -224,17 +236,16 @@ public class ThreatSpaceSearch {
                 }
             }
 
-            // Открытая тройка: 3 фишки и оба конца открыты
+            // Open Three: 3 pieces total, open on both ends
             if (count == 3 && leftOpen == 1 && rightOpen == 1) {
                 return true;
             }
         }
-
         return false;
     }
 
     /**
-     * Вспомогательный класс для представления хода
+     * Helper class representing a move coordinates.
      */
     public static class Move {
         public final int r, c;

@@ -2,87 +2,119 @@ package com.gomoku;
 
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.effect.DropShadow;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Shape;
-import javafx.stage.Stage;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.HBox;
-import javafx.scene.control.Button;
-import javafx.geometry.Insets;
 import javafx.scene.shape.Line;
-import javafx.animation.FadeTransition;
-import javafx.animation.ScaleTransition;
-import javafx.animation.PauseTransition;
-import javafx.animation.Timeline;
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
+import javafx.scene.shape.Shape;
+import javafx.scene.transform.Scale;
+import javafx.stage.Stage;
 import javafx.util.Duration;
-import java.util.List;
+import javafx.animation.FadeTransition;
+import javafx.animation.PauseTransition;
+import javafx.animation.ScaleTransition;
+
 import java.util.Comparator;
+import java.util.List;
+
+/**
+ * The Main Application class for the Gomoku Game.
+ * <p>
+ * This class initializes the JavaFX application, manages the primary stage,
+ * and handles the switching between the Welcome Screen and the Game Board.
+ * It also handles all direct GUI updates (drawing pieces, animations, overlays).
+ */
 
 public class GomokuGUI extends Application {
 
+    // === Board Constants ===
     private static final int BOARD_SIZE = 15;
     private static final int CELL_SIZE = 40;
-    private static final int MARGIN = 20; // Отступ от краёв для сетки
+    private static final int MARGIN = 20;
+
+    // Calculated base size for the board pane
+    private static final int BASE_BOARD_SIZE = (BOARD_SIZE - 1) * CELL_SIZE + MARGIN * 2;
 
     private Game game;
-    private Pane boardPane; // Заменили GridPane на Pane
-    private Label statusLabel;
-    private Button newGameButton;
-    private Button menuButton;
-    private Shape lastMoveMarker = null;
+    private PieceSettings pieceSettings;
 
-    private Pane drawingPane;
-    private final Shape[][] pieces = new Shape[BOARD_SIZE][BOARD_SIZE]; // Хранение фишек
-    private BorderPane root;
-    private VBox gameEndOverlay;
-
+    // === GUI Elements ===
     private Stage primaryStage;
-    private Scene gameScene;
-    private Scene welcomeScene;
+    private StackPane mainContainer; // Root container for view switching
+    private BorderPane gameRoot; // Root layout for the active game
     private WelcomeScreen welcomeScreen;
 
-    // Piece customization settings
-    private PieceSettings pieceSettings;
+    private Pane boardPane; // The visual board
+    private Pane drawingPane; // Layer for drawing winning lines
+    private Label statusLabel; // "Your turn" / "AI Thinking"
+    private VBox gameEndOverlay; // Win/Loss popup
+
+    private final Shape[][] pieces = new Shape[BOARD_SIZE][BOARD_SIZE];
+    private Shape lastMoveMarker = null;
 
     @Override
     public void start(Stage primaryStage) {
         this.primaryStage = primaryStage;
 
-        // Create the welcome screen content
+        // Root container that holds either the WelcomeScreen or the GameRoot
+        mainContainer = new StackPane();
+        mainContainer.getStyleClass().add("root");
+
+        // Initialize Welcome Screen
         welcomeScreen = new WelcomeScreen(this::startGame);
 
-        // Create welcome scene
-        welcomeScene = new Scene(welcomeScreen.getRoot(), 700, 900);
+        // Show Welcome Screen initially
+        mainContainer.getChildren().add(welcomeScreen.getRoot());
+
+        // Setup Scene
+        Scene scene = new Scene(mainContainer, 900, 800);
         try {
-            welcomeScene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+            scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
         } catch (Exception e) {
             System.err.println("Could not load CSS: " + e.getMessage());
         }
 
         primaryStage.setTitle("Gomoku · 五目並べ");
-        primaryStage.setScene(welcomeScene);
-        primaryStage.setResizable(true);
-        primaryStage.setMinWidth(600);
+        primaryStage.setScene(scene);
+        primaryStage.setMinWidth(650);
         primaryStage.setMinHeight(700);
         primaryStage.show();
     }
 
     /**
-     * Called when user clicks "Begin" button
+     * Smoothly transitions content within the main window (e.g., Menu -> Game).
+     */
+    private void switchView(Parent newContent) {
+        newContent.setOpacity(0);
+        mainContainer.getChildren().add(newContent);
+
+        FadeTransition fadeIn = new FadeTransition(Duration.millis(300), newContent);
+        fadeIn.setFromValue(0);
+        fadeIn.setToValue(1);
+
+        fadeIn.setOnFinished(e -> {
+            // Remove the old view to free up resources
+            if (mainContainer.getChildren().size() > 1) {
+                mainContainer.getChildren().remove(0);
+            }
+        });
+        fadeIn.play();
+    }
+
+    /**
+     * Initializes and starts a new game session.
+     * Called when "Start Game" is clicked in the Welcome Screen.
      */
     private void startGame() {
         System.out.println("Starting game...");
 
-        // Get customization settings from welcome screen
+        // Capture settings from the welcome screen
         pieceSettings = new PieceSettings(
                 welcomeScreen.getPlayerShape(),
                 welcomeScreen.getPlayerColor(),
@@ -90,119 +122,133 @@ public class GomokuGUI extends Application {
                 welcomeScreen.getAiColor()
         );
 
-        // Create the game UI
-        root = new BorderPane();
+        // Build the Game Interface
+        gameRoot = new BorderPane();
+        gameRoot.setStyle("-fx-background-color: transparent;");
 
-        HBox topPanel = createTopPanel();
-        root.setTop(topPanel);
+        // Top Panel (Status & Buttons)
+        BorderPane topPanel = createTopPanel();
+        gameRoot.setTop(topPanel);
 
-        // Create the game board in the center
+        // Game Board
         boardPane = createBoardPane();
 
-        // Wrap board in StackPane to allow overlay
-        StackPane boardContainer = new StackPane();
-        boardContainer.getChildren().add(boardPane);
-        root.setCenter(boardContainer);
+        // Wrap board for responsive scaling
+        StackPane boardWrapper = new StackPane(boardPane);
+        boardWrapper.setPadding(new Insets(20));
 
-        // Create the Game Controller
+        // Scale transform for the board
+        Scale scale = new Scale(1, 1);
+        boardPane.getTransforms().add(scale);
+
+        // Responsive scaling logic
+        boardWrapper.layoutBoundsProperty().addListener((obs, oldBounds, newBounds) -> {
+            double availableWidth = newBounds.getWidth() - 40;
+            double availableHeight = newBounds.getHeight() - 40;
+
+            double scaleFactor = Math.min(
+                    availableWidth / BASE_BOARD_SIZE,
+                    availableHeight / BASE_BOARD_SIZE
+            );
+            // Limit zoom levels
+            scaleFactor = Math.max(0.5, Math.min(scaleFactor, 1.5));
+
+            scale.setPivotX(BASE_BOARD_SIZE / 2.0);
+            scale.setPivotY(BASE_BOARD_SIZE / 2.0);
+            scale.setX(scaleFactor);
+            scale.setY(scaleFactor);
+        });
+
+        gameRoot.setCenter(boardWrapper);
+
+        // Start Logic
         game = new Game(this);
 
-        // Create and set the game scene
-        int totalSize = (BOARD_SIZE - 1) * CELL_SIZE + MARGIN * 2;
-        gameScene = new Scene(root, totalSize + 80, totalSize + 160);
-        try {
-            gameScene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
-        } catch (Exception e) {
-            System.err.println("Could not load CSS: " + e.getMessage());
-        }
-
-        // Switch to game scene
-        primaryStage.setTitle("Gomoku AI");
-        primaryStage.setScene(gameScene);
-
-        System.out.println("Game started!");
+        switchView(gameRoot);
     }
 
-    /**
-     * Returns to main menu
-     */
     private void returnToMenu() {
-        primaryStage.setTitle("Gomoku · 五目並べ");
-        primaryStage.setScene(welcomeScene);
+        switchView(welcomeScreen.getRoot());
     }
 
     /**
-     * Creates the top panel with status and buttons
+     * Creates the top navigation bar with the status label centered.
      */
-    private HBox createTopPanel() {
-        HBox topPanel = new HBox(20);
-        topPanel.setAlignment(Pos.CENTER);
-        topPanel.setPadding(new Insets(20));
-        topPanel.setStyle("-fx-background-color: #FAFAFA; -fx-border-color: #E0E0E0; -fx-border-width: 0 0 1 0;");
+    private BorderPane createTopPanel() {
+        BorderPane topPanel = new BorderPane();
+        topPanel.setPadding(new Insets(15, 25, 15, 25));
+        topPanel.setStyle("-fx-background-color: rgba(255, 255, 255, 0.6); -fx-border-color: #D4C4BC; -fx-border-width: 0 0 1 0;");
 
+        // 1. Status Label (Center)
         statusLabel = new Label("Your turn");
         statusLabel.getStyleClass().add("status-label");
+        statusLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: 500; -fx-text-fill: #8B7B75;");
 
-        // Buttons container
+        HBox statusBox = new HBox(statusLabel);
+        statusBox.setAlignment(Pos.CENTER);
+        statusBox.setPickOnBounds(false);
+
+        // 2. Control Buttons (Right)
         HBox buttonsBox = new HBox(12);
-        buttonsBox.setAlignment(Pos.CENTER);
+        buttonsBox.setAlignment(Pos.CENTER_RIGHT);
 
-        newGameButton = new Button("New Game");
+        Button newGameButton = new Button("New Game");
         newGameButton.getStyleClass().add("new-game-button");
         newGameButton.setOnAction(e -> {
             game.resetGame();
             hideGameEndOverlay();
         });
 
-        // Menu button
-        menuButton = new Button("Menu");
+        Button menuButton = new Button("Menu");
         menuButton.getStyleClass().add("menu-button-small");
         menuButton.setOnAction(e -> returnToMenu());
 
-        buttonsBox.getChildren().addAll(newGameButton, menuButton);
+        Button exitButton = new Button("Exit");
+        exitButton.getStyleClass().add("menu-button-small");
+        exitButton.setOnAction(e -> {
+            Platform.exit();
+            System.exit(0);
+        });
 
-        topPanel.getChildren().addAll(statusLabel, buttonsBox);
+        buttonsBox.getChildren().addAll(newGameButton, menuButton, exitButton);
+
+        // 3. Layout
+        StackPane layout = new StackPane();
+        layout.getChildren().addAll(statusBox, buttonsBox);
+        StackPane.setAlignment(statusBox, Pos.CENTER);
+        StackPane.setAlignment(buttonsBox, Pos.CENTER_RIGHT);
+
+        topPanel.setCenter(layout);
+
         return topPanel;
     }
 
-
-
     /**
-     * Преобразует координаты доски (row, col) в пиксельные координаты
+     * Generates the grid visual.
      */
-    private double[] getBoardCoordinates(int row, int col) {
-        double x = MARGIN + col * CELL_SIZE;
-        double y = MARGIN + row * CELL_SIZE;
-        return new double[]{x, y};
-    }
     private Pane createBoardPane() {
-        int totalSize = (BOARD_SIZE - 1) * CELL_SIZE + MARGIN * 2;
-
         Pane pane = new Pane();
-        pane.setPrefSize(totalSize, totalSize);
-        pane.setMinSize(totalSize, totalSize);
-        pane.setMaxSize(totalSize, totalSize);
+        pane.setPrefSize(BASE_BOARD_SIZE, BASE_BOARD_SIZE);
+        pane.setMinSize(BASE_BOARD_SIZE, BASE_BOARD_SIZE);
+        pane.setMaxSize(BASE_BOARD_SIZE, BASE_BOARD_SIZE);
 
-        // ☕ Минималистичный стиль "Тёплый капучино"
         pane.setStyle(
                 "-fx-background-color: linear-gradient(to bottom right, #FAF6F1, #F0E6D2);" +
                         "-fx-background-radius: 8px;" +
                         "-fx-border-color: #C9B39C;" +
                         "-fx-border-width: 2px;" +
                         "-fx-border-radius: 8px;" +
-                        "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 10, 0, 0, 2);"
+                        "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 15, 0, 0, 4);"
         );
 
-        // Тонкие элегантные линии
+        // Draw grid lines
         for (int i = 0; i < BOARD_SIZE; i++) {
             double x = MARGIN + i * CELL_SIZE;
             Line vLine = new Line(x, MARGIN, x, MARGIN + (BOARD_SIZE - 1) * CELL_SIZE);
-            vLine.setStroke(Color.rgb(139, 115, 85, 0.4)); // Тёплый коричневый
+            vLine.setStroke(Color.rgb(139, 115, 85, 0.4));
             vLine.setStrokeWidth(0.8);
             pane.getChildren().add(vLine);
-        }
 
-        for (int i = 0; i < BOARD_SIZE; i++) {
             double y = MARGIN + i * CELL_SIZE;
             Line hLine = new Line(MARGIN, y, MARGIN + (BOARD_SIZE - 1) * CELL_SIZE, y);
             hLine.setStroke(Color.rgb(139, 115, 85, 0.4));
@@ -210,19 +256,18 @@ public class GomokuGUI extends Application {
             pane.getChildren().add(hLine);
         }
 
-        // Маленькие минималистичные звёздочки
+        // Draw star points (hoshi)
         int[] starPoints = {3, 7, 11};
         for (int r : starPoints) {
             for (int c : starPoints) {
                 double x = MARGIN + c * CELL_SIZE;
                 double y = MARGIN + r * CELL_SIZE;
-                javafx.scene.shape.Circle star = new javafx.scene.shape.Circle(x, y, 2.5);
+                javafx.scene.shape.Circle star = new javafx.scene.shape.Circle(x, y, 3);
                 star.setFill(Color.rgb(139, 115, 85, 0.6));
                 pane.getChildren().add(star);
             }
         }
-
-        // Обработчик кликов
+        // Handle clicks
         pane.setOnMouseClicked(event -> {
             double mouseX = event.getX();
             double mouseY = event.getY();
@@ -235,18 +280,20 @@ public class GomokuGUI extends Application {
 
         drawingPane = new Pane();
         drawingPane.setMouseTransparent(true);
-        drawingPane.setPrefSize(totalSize, totalSize);
+        drawingPane.setPrefSize(BASE_BOARD_SIZE, BASE_BOARD_SIZE);
         pane.getChildren().add(drawingPane);
 
         return pane;
     }
 
+    private double[] getBoardCoordinates(int row, int col) {
+        double x = MARGIN + col * CELL_SIZE;
+        double y = MARGIN + row * CELL_SIZE;
+        return new double[]{x, y};
+    }
 
     /**
-     * This method is called BY THE GAME CONTROLLER to update the view.
-     * @param r The row to draw on.
-     * @param c The column to draw on.
-     * @param player The player (PLAYER_X or PLAYER_O)
+     * Draws a piece on the board.
      */
     public void drawPiece(int r, int c, int player) {
         Platform.runLater(() -> {
@@ -255,78 +302,63 @@ public class GomokuGUI extends Application {
             Color strokeColor;
 
             if (player == Board.PLAYER_X) {
-                // Player piece
                 piece = PieceSettings.createShape(pieceSettings.getPlayerShape(), CELL_SIZE / 2.0 - 5);
                 color = pieceSettings.getPlayerColor();
-                strokeColor = color.darker();
             } else {
-                // AI piece
                 piece = PieceSettings.createShape(pieceSettings.getAiShape(), CELL_SIZE / 2.0 - 5);
                 color = pieceSettings.getAiColor();
-                strokeColor = color.darker();
             }
+            strokeColor = color.darker();
 
             piece.setFill(color);
             piece.setStroke(strokeColor);
             piece.setStrokeWidth(1.5);
 
-            // Получаем координаты пересечения
             double[] coords = getBoardCoordinates(r, c);
             piece.setLayoutX(coords[0]);
             piece.setLayoutY(coords[1]);
 
-            // Remove last move highlight from previous piece
+            // Update last move highlight
             if (lastMoveMarker != null) {
-                lastMoveMarker.setStroke(((Color)lastMoveMarker.getFill()).darker());
+                lastMoveMarker.setStroke(((Color) lastMoveMarker.getFill()).darker());
                 lastMoveMarker.setStrokeWidth(1.5);
             }
 
-            // Add highlight to current piece
             piece.setStroke(Color.rgb(139, 115, 85));
             piece.setStrokeWidth(2.5);
             lastMoveMarker = piece;
 
-            // Add a nice shadow
-            piece.setEffect(new DropShadow(5, Color.rgb(0, 0, 0, 0.5)));
+            piece.setEffect(new DropShadow(5, Color.rgb(0, 0, 0, 0.2)));
 
-            // Добавляем фишку на доску
             boardPane.getChildren().add(piece);
             pieces[r][c] = piece;
         });
     }
 
-
+    /**
+     * Clears the board for a new game.
+     */
     public void clearBoard() {
         Platform.runLater(() -> {
-            // Удаляем все фишки из массива
             for (int r = 0; r < BOARD_SIZE; r++) {
                 for (int c = 0; c < BOARD_SIZE; c++) {
-                    if (pieces[r][c] != null) {
-                        boardPane.getChildren().remove(pieces[r][c]);
-                        pieces[r][c] = null;
-                    }
+                    pieces[r][c] = null;
                 }
             }
 
-            // Очищаем drawingPane (линии победы)
             drawingPane.getChildren().clear();
 
-            // ВАЖНО: Удаляем все фоновые круги и другие элементы
-            // Оставляем только линии сетки, звёздочки и drawingPane
+            // Clear visual nodes, preserving grid lines and star points
             boardPane.getChildren().removeIf(node -> {
-                // Удаляем всё, кроме Line (линии сетки), маленьких Circle (звёздочки) и drawingPane
-                if (node instanceof Line) {
-                    return false; // Оставляем линии
-                }
+                if (node instanceof Line) return false;
+                if (node == drawingPane) return false;
+                // Preserve star points (small circles)
                 if (node instanceof javafx.scene.shape.Circle) {
-                    javafx.scene.shape.Circle circle = (javafx.scene.shape.Circle) node;
-                    // Оставляем только маленькие круги (звёздочки radius=3.5)
-                    return circle.getRadius() > 4; // Удаляем большие круги (фоновые подсветки)
+                    double radius = ((javafx.scene.shape.Circle) node).getRadius();
+                    if (radius < 5) {
+                        return false;
+                    }
                 }
-                if (node == drawingPane) {
-                    return false; // Оставляем drawingPane
-                }
-                // Удаляем всё остальное (фишки, фоновые элементы)
                 return true;
             });
 
@@ -334,213 +366,136 @@ public class GomokuGUI extends Application {
         });
     }
 
-    public void updateStatus(String text) {
-        Platform.runLater(() -> statusLabel.setText(text));
+    /**
+     * Updates the status text and player icon.
+     */
+    public void updateStatus(String text, int activePlayerId) {
+        Platform.runLater(() -> {
+            statusLabel.setText(text);
+
+            if (pieceSettings == null || activePlayerId == Board.EMPTY) {
+                statusLabel.setGraphic(null);
+                return;
+            }
+
+            Shape icon;
+            Color color;
+
+            if (activePlayerId == Board.PLAYER_X) {
+                icon = PieceSettings.createShape(pieceSettings.getPlayerShape(), 7);
+                color = pieceSettings.getPlayerColor();
+            } else {
+                icon = PieceSettings.createShape(pieceSettings.getAiShape(), 7);
+                color = pieceSettings.getAiColor();
+            }
+
+            icon.setFill(color);
+            icon.setStroke(color.darker());
+            icon.setStrokeWidth(1.0);
+            icon.setEffect(new DropShadow(2, Color.rgb(0, 0, 0, 0.2)));
+
+            statusLabel.setGraphic(icon);
+            statusLabel.setGraphicTextGap(12);
+        });
     }
 
     /**
-     * Компактная карточка в пудровом нюд стиле
+     * Displays the game end result popup (Win/Loss/Draw).
      */
     public void showGameEndMessage(String message) {
         Platform.runLater(() -> {
             hideGameEndOverlay();
 
-            // КОМПАКТНОЕ окно в пудровом стиле
-            gameEndOverlay = new VBox(10);
+            gameEndOverlay = new VBox(15);
             gameEndOverlay.setAlignment(Pos.CENTER);
-            gameEndOverlay.setMaxWidth(160);
-            gameEndOverlay.setMaxHeight(120);
-            gameEndOverlay.setPadding(new Insets(16, 20, 16, 20));
 
-            // Полупрозрачный пудровый фон
+            gameEndOverlay.setMinWidth(220);
+            gameEndOverlay.setMaxWidth(220);
+            gameEndOverlay.setMinHeight(140);
+            gameEndOverlay.setMaxHeight(140);
+            gameEndOverlay.setPadding(new Insets(20));
+
             gameEndOverlay.setStyle(
-                    "-fx-background-color: rgba(250, 248, 245, 0.92);" + // Пудровый
-                            "-fx-background-radius: 12;" +
-                            "-fx-border-color: rgba(168, 159, 145, 0.3);" +
+                    "-fx-background-color: rgba(255, 252, 250, 0.85);" +
+                            "-fx-background-radius: 30;" +
+                            "-fx-border-radius: 30;" +
+                            "-fx-border-color: rgba(224, 213, 207, 0.6);" +
                             "-fx-border-width: 1.5;" +
-                            "-fx-border-radius: 12;" +
-                            "-fx-effect: dropshadow(gaussian, rgba(92, 85, 82, 0.2), 15, 0, 0, 5);"
+                            "-fx-effect: dropshadow(gaussian, rgba(139, 123, 123, 0.15), 15, 0, 0, 4);"
             );
 
-            // Текст результата
             Label resultLabel = new Label(message);
             resultLabel.setStyle(
-                    "-fx-font-size: 15px;" +
-                            "-fx-font-weight: 500;" +
-                            "-fx-text-fill: #5C5552;" + // Графитовый
-                            "-fx-letter-spacing: 0.5px;"
+                    "-fx-font-family: 'SF Pro Display', sans-serif;" +
+                            "-fx-font-size: 20px;" +
+                            "-fx-font-weight: 600;" +
+                            "-fx-text-fill: #8B7B75;"
             );
 
-            // Разделитель
-            Pane divider = new Pane();
-            divider.setPrefHeight(1);
-            divider.setMaxWidth(40);
-            divider.setStyle("-fx-background-color: rgba(168, 159, 145, 0.25);");
-
-            // Кнопка
-            Button playAgainButton = new Button("New Game");
-            playAgainButton.setStyle(
-                    "-fx-background-color: #A89F91;" +
-                            "-fx-text-fill: #FAF8F5;" +
-                            "-fx-font-size: 11px;" +
-                            "-fx-font-weight: 400;" +
-                            "-fx-letter-spacing: 1px;" +
-                            "-fx-padding: 7px 16px;" +
-                            "-fx-background-radius: 12;" +
-                            "-fx-cursor: hand;"
-            );
-
-            playAgainButton.setOnMouseEntered(e -> {
-                playAgainButton.setStyle(
-                        "-fx-background-color: #8F8679;" +
-                                "-fx-text-fill: #FAF8F5;" +
-                                "-fx-font-size: 11px;" +
-                                "-fx-font-weight: 400;" +
-                                "-fx-letter-spacing: 1px;" +
-                                "-fx-padding: 7px 16px;" +
-                                "-fx-background-radius: 12;" +
-                                "-fx-cursor: hand;"
-                );
-            });
-
-            playAgainButton.setOnMouseExited(e -> {
-                playAgainButton.setStyle(
-                        "-fx-background-color: #A89F91;" +
-                                "-fx-text-fill: #FAF8F5;" +
-                                "-fx-font-size: 11px;" +
-                                "-fx-font-weight: 400;" +
-                                "-fx-letter-spacing: 1px;" +
-                                "-fx-padding: 7px 16px;" +
-                                "-fx-background-radius: 12;" +
-                                "-fx-cursor: hand;"
-                );
-            });
+            Button playAgainButton = new Button("Play Again");
+            playAgainButton.getStyleClass().add("primary-button");
+            playAgainButton.setPrefWidth(150);
+            playAgainButton.setStyle("-fx-font-size: 13px; -fx-padding: 8px 16px;");
 
             playAgainButton.setOnAction(e -> {
                 game.resetGame();
                 hideGameEndOverlay();
             });
 
-            gameEndOverlay.getChildren().addAll(resultLabel, divider, playAgainButton);
+            gameEndOverlay.getChildren().addAll(resultLabel, playAgainButton);
+            gameEndOverlay.setLayoutX((BASE_BOARD_SIZE - 220) / 2.0);
+            gameEndOverlay.setLayoutY((BASE_BOARD_SIZE - 140) / 2.0);
+            boardPane.getChildren().add(gameEndOverlay);
 
-            StackPane boardContainer = (StackPane) root.getCenter();
-            boardContainer.getChildren().add(gameEndOverlay);
-            StackPane.setAlignment(gameEndOverlay, Pos.CENTER);
-
-            // Анимация
-            gameEndOverlay.setOpacity(0);
-            gameEndOverlay.setScaleX(0.8);
-            gameEndOverlay.setScaleY(0.8);
-
-            FadeTransition fadeIn = new FadeTransition(Duration.millis(250), gameEndOverlay);
+            FadeTransition fadeIn = new FadeTransition(Duration.millis(300), gameEndOverlay);
             fadeIn.setFromValue(0);
             fadeIn.setToValue(1);
 
-            ScaleTransition scaleIn = new ScaleTransition(Duration.millis(250), gameEndOverlay);
-            scaleIn.setFromX(0.8);
-            scaleIn.setFromY(0.8);
-            scaleIn.setToX(1);
-            scaleIn.setToY(1);
+            ScaleTransition scaleUp = new ScaleTransition(Duration.millis(300), gameEndOverlay);
+            scaleUp.setFromX(0.85);
+            scaleUp.setFromY(0.85);
+            scaleUp.setToX(1.0);
+            scaleUp.setToY(1.0);
 
             fadeIn.play();
-            scaleIn.play();
+            scaleUp.play();
         });
     }
 
-
-
-
-    /**
-     * Hides the game end overlay
-     */
     private void hideGameEndOverlay() {
         if (gameEndOverlay != null) {
-            StackPane boardContainer = (StackPane) root.getCenter();
-            boardContainer.getChildren().remove(gameEndOverlay);
+            boardPane.getChildren().remove(gameEndOverlay);
             gameEndOverlay = null;
         }
     }
 
     /**
-     * Elegant WIN effect - glowing pieces with proper coordinates
+     * Animates the winning pieces.
      */
     public void drawWinningLine(List<int[]> lineCoords) {
         if (lineCoords == null || lineCoords.size() < 2) return;
 
-        lineCoords.sort(Comparator.comparingInt(coord -> coord[0]));
-
-        if (lineCoords.get(0)[0] == lineCoords.get(lineCoords.size() - 1)[0]) {
-            lineCoords.sort(Comparator.comparingInt(coord -> coord[1]));
-        }
+        lineCoords.sort(Comparator.comparingInt(c -> c[0] * BOARD_SIZE + c[1]));
 
         Platform.runLater(() -> {
-            // Animate winning pieces - elegant wave
             for (int i = 0; i < lineCoords.size(); i++) {
                 int[] coord = lineCoords.get(i);
-                int row = coord[0];
-                int col = coord[1];
-
-                Shape piece = pieces[row][col];
+                int r = coord[0];
+                int c = coord[1];
+                Shape piece = pieces[r][c];
                 if (piece == null) continue;
 
-                // Получаем координаты пересечения для фонового круга
-                double[] coords = getBoardCoordinates(row, col);
-
-                // Delayed wave effect
-                PauseTransition pause = new PauseTransition(Duration.millis(i * 80));
-
+                PauseTransition pause = new PauseTransition(Duration.millis(i * 100));
                 pause.setOnFinished(e -> {
-                    // 1. Создаём фоновый круг-подсветку
-                    javafx.scene.shape.Circle bgCircle = new javafx.scene.shape.Circle(
-                            coords[0], coords[1], CELL_SIZE / 2.5
-                    );
-                    bgCircle.setFill(Color.rgb(139, 115, 85, 0.12));
-                    bgCircle.setStroke(Color.TRANSPARENT);
-
-                    // Добавляем фоновый круг под фишку
-                    boardPane.getChildren().add(boardPane.getChildren().indexOf(piece), bgCircle);
-
-                    // Анимация появления фона
-                    FadeTransition bgFade = new FadeTransition(Duration.millis(400), bgCircle);
-                    bgFade.setFromValue(0);
-                    bgFade.setToValue(1);
-                    bgFade.play();
-
-                    // 2. Scale up animation для фишки
-                    ScaleTransition scaleUp = new ScaleTransition(Duration.millis(400), piece);
-                    scaleUp.setToX(1.2);
-                    scaleUp.setToY(1.2);
-                    scaleUp.setInterpolator(javafx.animation.Interpolator.EASE_OUT);
-
-                    // 3. Add elegant soft glow
-                    DropShadow glow = new DropShadow();
-                    glow.setColor(Color.rgb(139, 115, 85, 0.6)); // Мягкий бежевый
-                    glow.setRadius(20);
-                    glow.setSpread(0.4);
-
-                    piece.setEffect(glow);
-
-                    // 4. Subtle pulsating glow (slower, more elegant)
-                    Timeline pulse = new Timeline(
-                            new KeyFrame(Duration.ZERO,
-                                    new KeyValue(glow.radiusProperty(), 16)
-                            ),
-                            new KeyFrame(Duration.millis(1500),
-                                    new KeyValue(glow.radiusProperty(), 24)
-                            ),
-                            new KeyFrame(Duration.millis(3000),
-                                    new KeyValue(glow.radiusProperty(), 16)
-                            )
-                    );
-                    pulse.setCycleCount(Timeline.INDEFINITE);
-
-                    scaleUp.play();
-                    pulse.play();
+                    ScaleTransition st = new ScaleTransition(Duration.millis(300), piece);
+                    st.setToX(1.3);
+                    st.setToY(1.3);
+                    st.setCycleCount(2);
+                    st.setAutoReverse(true);
+                    st.play();
                 });
-
                 pause.play();
             }
         });
     }
-
 }

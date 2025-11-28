@@ -7,18 +7,14 @@ import java.util.Set;
 import java.util.Comparator;
 
 /**
- * Implements the Minimax algorithm with Alpha-Beta Pruning to find the
- * optimal move for the AI player.
- *
- * This implementation includes two key optimizations:
- * 1.  **Relevant Move Generation**: Instead of searching the entire 15x15 board,
- * the algorithm only considers empty cells within a small radius
- * of existing pieces. This drastically reduces the "branching factor".
- * 2.  **Move Ordering**: Before performing a deep search, the algorithm
- * performs a shallow search (depth 0) to get a quick heuristic score
- * for each possible move. It then sorts these moves, exploring the
- * most promising ones first. This makes Alpha-Beta Pruning
- * significantly more effective.
+ * Implements the Minimax algorithm with Alpha-Beta Pruning to determine the optimal move for the AI.
+ * <p>
+ * This implementation employs several optimizations to handle the complexity of Gomoku (15x15 board):
+ * <ol>
+ * <li><b>Threat Space Search:</b> Prioritizes moves that lead to immediate wins or block opponent wins, significantly reducing the branching factor in critical positions.</li>
+ * <li><b>Relevant Move Generation:</b> Only considers empty cells within a specific radius of existing pieces, ignoring the vast empty areas of the board.</li>
+ * <li><b>Move Ordering:</b> Sorts candidate moves based on a shallow heuristic evaluation. Visiting promising moves first maximizes the efficiency of Alpha-Beta pruning.</li>
+ * </ol>
  */
 public class MinimaxAI {
     private final int aiPlayer;
@@ -27,23 +23,26 @@ public class MinimaxAI {
     private final GameLogic logic;
     private final int boardSize;
     private final Evaluator evaluator;
-    private final ThreatSpaceSearch threatSearch;
 
-    // A score far greater than any heuristic evaluation, used to represent a forced win.
+    // A score representing a guaranteed win (must be larger than any heuristic score)
     private static final int WIN_SCORE = 1000000;
-    // The radius (in cells) around existing pieces to search for valid moves.
+
+    // The radius around existing pieces to search for non-forcing moves
     private static final int MOVE_GENERATION_RADIUS = 2;
 
+    // Performance metrics
     private int nodesEvaluated = 0;
     private int pruneCount = 0;
 
     /**
-     * A simple inner class to represent a move (a coordinate).
-     * Used by HashSet to store and check for duplicate moves efficiently.
+     * Internal class representing a move on the board.
      */
     private static class Move {
         final int r, c;
-        Move(int r, int c) { this.r = r; this.c = c; }
+        Move(int r, int c) {
+            this.r = r;
+            this.c = c;
+        }
 
         @Override
         public boolean equals(Object o) {
@@ -55,13 +54,12 @@ public class MinimaxAI {
 
         @Override
         public int hashCode() {
-            return 31 * r + c; // A simple hash for coordinates
+            return 31 * r + c;
         }
     }
 
     /**
-     * An inner class that pairs a Move with its heuristic score.
-     * This is used to sort moves before passing them to the recursive minimax function.
+     * Helper class to associate a Move with its heuristic score for sorting.
      */
     private static class MoveScore {
         final Move move;
@@ -73,12 +71,13 @@ public class MinimaxAI {
     }
 
     /**
-     * Constructs the MinimaxAI.
-     * @param aiPlayer The integer ID for the AI player (e.g., Board.PLAYER_O).
-     * @param opponent The integer ID for the human player (e.g., Board.PLAYER_X).
-     * @param maxDepth The maximum ply (half-moves) to search.
-     * @param logic The GameLogic object used for win-checking.
-     * @param boardSize The size of the board (e.g., 15).
+     * Constructs the MinimaxAI instance.
+     *
+     * @param aiPlayer  The ID of the AI player.
+     * @param opponent  The ID of the opponent (human).
+     * @param maxDepth  The maximum depth of the search tree (ply).
+     * @param logic     The game logic for verifying win conditions.
+     * @param boardSize The size of the game board.
      */
     public MinimaxAI(int aiPlayer, int opponent, int maxDepth, GameLogic logic, int boardSize) {
         this.aiPlayer = aiPlayer;
@@ -86,26 +85,25 @@ public class MinimaxAI {
         this.maxDepth = maxDepth;
         this.logic = logic;
         this.boardSize = boardSize;
-        this.evaluator = new Evaluator(logic, 5, boardSize, aiPlayer, opponent);
-        this.threatSearch = new ThreatSpaceSearch(null, logic, boardSize);
+        this.evaluator = new Evaluator(boardSize, aiPlayer, opponent);
+        //this.threatSearch = new ThreatSpaceSearch(null, logic, boardSize);
     }
 
     /**
-     * The main public method to find the best move on the current board.
-     * @param board The current board state.
-     * @return An integer array [row, col] representing the best move.
+     * Calculates the best move for the AI in the current board state.
+     *
+     * @param board The current state of the game board.
+     * @return An integer array {row, col} representing the best move.
      */
     public int[] findBestMove(Board board) {
         nodesEvaluated = 0;
         pruneCount = 0;
-
         long startTime = System.currentTimeMillis();
 
-        // НОВОЕ: Сначала проверяем критические угрозы
+        // 1. Threat Search: Identify forced moves (wins or blocks)
         ThreatSpaceSearch ts = new ThreatSpaceSearch(board, logic, boardSize);
         List<ThreatSpaceSearch.Move> threats = ts.findThreats(aiPlayer, opponent);
 
-        // Если есть форсирующие ходы, рассматриваем только их
         List<Move> possibleMoves;
         if (!threats.isEmpty()) {
             possibleMoves = new ArrayList<>();
@@ -114,14 +112,14 @@ public class MinimaxAI {
             }
             System.out.println("🎯 Threat space reduced to " + possibleMoves.size() + " moves");
         } else {
-            // Иначе используем обычную генерацию ходов
+            // 2. If no immediate threats, generate relevant moves
             possibleMoves = getRelevantMoves(board);
         }
 
         int bestScore = Integer.MIN_VALUE;
         Move bestMove = null;
 
-        // Быстрая проверка на немедленный выигрыш
+        // 3. Immediate Win Check (Sanity check)
         for (Move move : possibleMoves) {
             board.setCell(move.r, move.c, aiPlayer);
             if (logic.checkWin(move.r, move.c, aiPlayer)) {
@@ -132,20 +130,22 @@ public class MinimaxAI {
             board.setCell(move.r, move.c, Board.EMPTY);
         }
 
-        // Сортируем ходы для лучшего pruning
+        // 4. Move Ordering: Sort moves by a shallow heuristic check
         List<MoveScore> scoredMoves = new ArrayList<>();
         for (Move move : possibleMoves) {
             board.setCell(move.r, move.c, aiPlayer);
             scoredMoves.add(new MoveScore(move, evaluator.evaluate(board)));
             board.setCell(move.r, move.c, Board.EMPTY);
         }
+        // Sort descending (best moves first)
         scoredMoves.sort(Comparator.comparingInt((MoveScore ms) -> ms.score).reversed());
 
-        // Глубокий поиск
+        // 5. Deep Search (Minimax)
         for (MoveScore moveScore : scoredMoves) {
             Move move = moveScore.move;
 
             board.setCell(move.r, move.c, aiPlayer);
+            // Call minimax for the next level (minimizing player's turn)
             int score = minimax(board, maxDepth - 1, Integer.MIN_VALUE, Integer.MAX_VALUE, false, move.r, move.c);
             board.setCell(move.r, move.c, Board.EMPTY);
 
@@ -161,6 +161,7 @@ public class MinimaxAI {
                 " | Time: " + elapsed + "ms" +
                 " | Score: " + bestScore);
 
+        // Fallback if no moves found (e.g., board full or error)
         if (bestMove == null) {
             if (!possibleMoves.isEmpty()) {
                 return new int[]{possibleMoves.get(0).r, possibleMoves.get(0).c};
@@ -173,28 +174,23 @@ public class MinimaxAI {
     }
 
     /**
-     * Generates a list of empty cells that are "relevant" to the game,
-     * defined as being within MOVE_GENERATION_RADIUS of any existing piece.
-     * This prevents the AI from searching moves in empty, remote corners.
-     * @param board The current board state.
-     * @return A List of valid, relevant moves.
+     * Identifies cells that are worth exploring (neighbors of existing pieces).
      */
     private List<Move> getRelevantMoves(Board board) {
-        // Use a Set to automatically handle duplicate moves
         Set<Move> moves = new HashSet<>();
         boolean hasAnyPiece = false;
         int pieceCount = 0;
 
+        // Count pieces to potentially adjust radius (optimization)
         for (int r = 0; r < boardSize; r++) {
             for (int c = 0; c < boardSize; c++) {
-                // If this cell is occupied, look at its neighbors
                 if (board.getCell(r, c) != Board.EMPTY) {
                     pieceCount++;
                 }
             }
         }
 
-        // Адаптивный радиус: в начале игры - меньше, в середине - больше
+        // Dynamic radius: smaller search space in early game
         int radius = (pieceCount < 10) ? 1 : MOVE_GENERATION_RADIUS;
 
         for (int r = 0; r < boardSize; r++) {
@@ -218,6 +214,7 @@ public class MinimaxAI {
             }
         }
 
+        // If board is empty, start at the center
         if (!hasAnyPiece) {
             moves.add(new Move(boardSize / 2, boardSize / 2));
         }
@@ -225,10 +222,7 @@ public class MinimaxAI {
         return new ArrayList<>(moves);
     }
 
-    /**
-     * A fallback method to find the first available empty cell.
-     * Used only in rare edge cases (like a full board).
-     */
+
     private int[] findFirstEmptyCell(Board board) {
         for (int r = 0; r < boardSize; r++) {
             for (int c = 0; c < boardSize; c++) {
@@ -237,53 +231,52 @@ public class MinimaxAI {
                 }
             }
         }
-        return new int[]{-1, -1}; // No empty cells
+        return new int[]{-1, -1};
     }
 
 
     /**
-     * The private recursive helper for the Minimax algorithm.
+     * The recursive Minimax algorithm with Alpha-Beta Pruning.
      *
-     * @param board The current board state.
-     * @param depth The remaining depth to search.
-     * @param alpha The best score found so far for the Maximizing player.
-     * @param beta The best score found so far for the Minimizing player.
-     * @param isMaximizingPlayer True if this node is for the AI, false for the Opponent.
-     * @param lastR The row of the move that *led* to this state.
-     * @param lastC The col of the move that *led* to this state.
-     * @return The heuristic score for this board state.
+     * @param board              The current board state.
+     * @param depth              Current depth in the search tree.
+     * @param alpha              Alpha value (best already explored option along the path to the root for the maximizer).
+     * @param beta               Beta value (best already explored option along the path to the root for the minimizer).
+     * @param isMaximizingPlayer True if it's the AI's turn, False if it's the Opponent's turn.
+     * @param lastR              The row of the last move made.
+     * @param lastC              The column of the last move made.
+     * @return The heuristic evaluation of the board.
      */
     private int minimax(Board board, int depth, int alpha, int beta, boolean isMaximizingPlayer, int lastR, int lastC) {
         nodesEvaluated++;
-        // 1. Terminal State Check (Win/Loss)
-        // Check if the *previous* move (by the other player) resulted in a win.
+
+        // 1. Terminal State Check: Did the previous move result in a win?
         if (isMaximizingPlayer) {
-            // The minimizer (opponent) just moved at (lastR, lastC)
+            // Previous move was by Minimizer (Opponent)
             if (logic.checkWin(lastR, lastC, opponent)) {
-                // Return a score penalized by depth (prefers losing later)
-                return -WIN_SCORE * (depth + 1);
+                return -WIN_SCORE * (depth + 1); // Penalize loss (prefer losing later)
             }
         } else {
-            // The maximizer (AI) just moved at (lastR, lastC)
+            // Previous move was by Maximizer (AI)
             if (logic.checkWin(lastR, lastC, aiPlayer)) {
-                // Return a score rewarded by depth (prefers winning sooner)
-                return WIN_SCORE * (depth + 1);
+                return WIN_SCORE * (depth + 1); // Reward win (prefer winning sooner)
             }
         }
 
-        // Достигли глубины или ничья
+        // 2. Depth Limit Reached
         if (depth == 0) {
             return evaluator.evaluate(board);
         }
 
-        // НОВОЕ: Генерируем ходы с учётом угроз
+        // 3. Move Generation (Threat-based or Relevant)
         ThreatSpaceSearch ts = new ThreatSpaceSearch(board, logic, boardSize);
         int currentPlayer = isMaximizingPlayer ? aiPlayer : opponent;
         int currentOpponent = isMaximizingPlayer ? opponent : aiPlayer;
 
+        // Check for forcing moves first
         List<ThreatSpaceSearch.Move> threats = ts.findThreats(currentPlayer, currentOpponent);
-
         List<Move> possibleMoves;
+
         if (!threats.isEmpty()) {
             possibleMoves = new ArrayList<>();
             for (ThreatSpaceSearch.Move t : threats) {
@@ -297,11 +290,8 @@ public class MinimaxAI {
             return evaluator.evaluate(board);
         }
 
-
-        // 3. Move Ordering
-        // Sort moves at this depth to maximize pruning efficiency.
+        // 4. Move Ordering
         List<MoveScore> scoredMoves = new ArrayList<>();
-
         for (Move move : possibleMoves) {
             board.setCell(move.r, move.c, currentPlayer);
             scoredMoves.add(new MoveScore(move, evaluator.evaluate(board)));
@@ -309,14 +299,12 @@ public class MinimaxAI {
         }
 
         if (isMaximizingPlayer) {
-            // Max player wants highest scores first
             scoredMoves.sort(Comparator.comparingInt((MoveScore ms) -> ms.score).reversed());
         } else {
-            // Min player wants lowest scores first (their "best" move)
             scoredMoves.sort(Comparator.comparingInt((MoveScore ms) -> ms.score));
         }
 
-        // 4. Recursive Search
+        // 5. Recursion
         if (isMaximizingPlayer) {
             int maxEval = Integer.MIN_VALUE;
             for (MoveScore moveScore : scoredMoves) {
@@ -330,13 +318,13 @@ public class MinimaxAI {
                 alpha = Math.max(alpha, eval);
                 if (beta <= alpha) {
                     pruneCount++;
-                    break; // Beta Cutoff (Pruning)
+                    break; // Beta Cutoff
                 }
             }
             return maxEval;
         }
 
-        // Minimizing Player (Opponent's Turn)
+        // Minimizing Player
         else {
             int minEval = Integer.MAX_VALUE;
             for (MoveScore moveScore : scoredMoves) {
@@ -350,7 +338,7 @@ public class MinimaxAI {
                 beta = Math.min(beta, eval);
                 if (beta <= alpha) {
                     pruneCount++;
-                    break; // Alpha Cutoff (Pruning)
+                    break; // Alpha Cutoff
                 }
             }
             return minEval;

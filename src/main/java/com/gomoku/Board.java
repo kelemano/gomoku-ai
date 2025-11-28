@@ -1,26 +1,24 @@
 package com.gomoku;
 
 /**
- * The core class representing the Gomoku game board.
- * It stores the state of the grid and provides basic accessors and mutators.
+ * Represents the Gomoku game board (grid model).
+ *
+ * This class stores the state of the board cells (Empty, Black, White)
+ * and provides methods to validate coordinates, place pieces, and retrieve cell states.
+ * It acts as the core data structure for the game logic and AI.
  */
 public class Board {
-
-    // Constants
-    private static final int DEFAULT_SIZE = 15; // Default board size is 15x15
-
-    // Board state variables
     private final int size;
-    private final int[][] grid; // 2D array to store cell states
+    private final int[][] grid;
 
-    // Constants for cell states/player IDs
     public static final int EMPTY = 0;
     public static final int PLAYER_X = 1;
     public static final int PLAYER_O = 2;
 
     /**
-     * Constructor that initializes the board to a specified size.
-     * @param size The side length of the square board (N x N).
+     * Constructs a new Board with the specified dimension.
+     *
+     * @param size The side length of the square board (e.g., 15).
      */
     public Board(int size) {
         this.size = size;
@@ -28,25 +26,21 @@ public class Board {
     }
 
     /**
-     * Default constructor, initializes a 15x15 board.
-     */
-    public Board() {
-        this(DEFAULT_SIZE);
-    }
-
-    /**
-     * @return The size of the board (side length).
+     * Returns the size of the board.
+     *
+     * @return The side length of the board (N).
      */
     public int getSize() {
         return size;
     }
 
     /**
-     * Gets the state of a specific cell.
-     * @param r Row index.
-     * @param c Column index.
-     * @return The cell state (EMPTY, PLAYER_X, or PLAYER_O).
-     * @throws IllegalArgumentException if coordinates are out of bounds.
+     * Retrieves the state of a specific cell.
+     *
+     * @param r The row index (0 to size-1).
+     * @param c The column index (0 to size-1).
+     * @return The state of the cell (Board.EMPTY, Board.PLAYER_X, or Board.PLAYER_O).
+     * @throws IllegalArgumentException if the coordinates are outside the board boundaries.
      */
     public int getCell(int r, int c) {
         if (isValid(r, c)) {
@@ -56,59 +50,44 @@ public class Board {
     }
 
     /**
-     * Attempts to place a player's piece at the specified cell OR undo a move.
-     * @param r Row index.
-     * @param c Column index.
-     * @param player The ID of the player making the move (or EMPTY to undo).
-     * @return true if the move was successfully made; false if the cell is already occupied (and not an undo).
+     * Sets the state of a cell. This method is used for both making moves
+     * and undoing moves (during AI calculation).
+     *
+     * @param r      The row index.
+     * @param c      The column index.
+     * @param player The value to set (Board.PLAYER_X, Board.PLAYER_O, or Board.EMPTY).
+     * @return true if the operation was successful (cell was empty or we are clearing it),
+     * false if the cell was already occupied by a piece (and we are not clearing it).
      */
     public boolean setCell(int r, int c, int player) {
         if (!isValid(r, c)) {
             return false;
         }
 
+        // Case 1: Clearing a cell (Undo move)
         if (player == EMPTY) {
             grid[r][c] = EMPTY;
             return true;
         }
 
-
+        // Case 2: Placing a piece (only allowed if cell is currently empty)
         if (grid[r][c] == EMPTY) {
             grid[r][c] = player;
             return true;
         }
 
+        // Cell is occupied, invalid move
         return false;
     }
 
     /**
-     * Checks if the given coordinates are within the board boundaries.
+     * Checks if the provided coordinates are within the valid board boundaries.
+     *
+     * @param r The row index.
+     * @param c The column index.
+     * @return true if (r, c) is inside the grid, false otherwise.
      */
     public boolean isValid(int r, int c) {
         return r >= 0 && r < size && c >= 0 && c < size;
-    }
-
-    /**
-     * Prints the current state of the board to the console.
-     */
-    public void print() {
-        System.out.print("   ");
-        for (int c = 0; c < size; c++) {
-            System.out.printf("%2d ", c);
-        }
-        System.out.println();
-
-        for (int r = 0; r < size; r++) {
-            System.out.printf("%2d ", r);
-            for (int c = 0; c < size; c++) {
-                char symbol = switch (grid[r][c]) {
-                    case PLAYER_X -> 'X';
-                    case PLAYER_O -> 'O';
-                    default -> '.';
-                };
-                System.out.print(" " + symbol + " ");
-            }
-            System.out.println();
-        }
     }
 }

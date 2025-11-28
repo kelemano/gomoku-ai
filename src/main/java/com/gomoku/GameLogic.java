@@ -1,21 +1,23 @@
 package com.gomoku;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
- * Class responsible for checking the game state,
- * particularly the win condition (five-in-a-row).
+ * Encapsulates the core rules of Gomoku.
+ * <p>
+ * This class is responsible for determining game outcomes, specifically checking
+ * if a move results in a win (Five-in-a-row) and identifying the winning line coordinates.
  */
 public class GameLogic {
     private final Board board;
     private final int winStreak;
 
     /**
-     * Constructor.
-     * @param board The current game board instance.
-     * @param winStreak The required streak length for a win (5).
+     * Constructs the GameLogic.
+     *
+     * @param board     The game board to analyze.
+     * @param winStreak The number of consecutive pieces required to win (usually 5).
      */
     public GameLogic(Board board, int winStreak) {
         this.board = board;
@@ -23,19 +25,18 @@ public class GameLogic {
     }
 
     /**
-     * Checks if the last move resulted in a win for the specified player.
-     * It checks all four major directions from the cell of the last move.
+     * Checks if the last move made by a player resulted in a win.
+     * Scans all four axes (Horizontal, Vertical, Diagonal, Anti-Diagonal) from the placement point.
      *
-     * @param lastR The row index of the last move.
-     * @param lastC The column index of the last move.
+     * @param lastR  The row index of the last move.
+     * @param lastC  The column index of the last move.
      * @param player The ID of the player who made the move.
-     * @return true if the player has achieved the winStreak, false otherwise.
+     * @return true if the move created a winning streak, false otherwise.
      */
     public boolean checkWin(int lastR, int lastC, int player) {
         if (player == Board.EMPTY) return false;
 
-        // Check the four main directions:
-        // (dr, dc): (row_change, col_change)
+        // Check the four main directions (dr, dc):
         return checkDirection(lastR, lastC, player, 0, 1) ||  // 1. Horizontal (right/left)
                 checkDirection(lastR, lastC, player, 1, 0) ||  // 2. Vertical (down/up)
                 checkDirection(lastR, lastC, player, 1, 1) ||  // 3. Main Diagonal (\)
@@ -43,55 +44,52 @@ public class GameLogic {
     }
 
     /**
-     * Helper method to count the longest streak in both directions along the line (dr, dc).
-     *
-     * @param r Start row.
-     * @param c Start column.
-     * @param player Player ID to check.
-     * @param dr Row direction change.
-     * @param dc Column direction change.
-     * @return True if a streak >= winStreak is found.
+     * Helper method to count the longest streak of the player's pieces passing through (r, c)
+     * in a specific direction defined by (dr, dc).
      */
     private boolean checkDirection(int r, int c, int player, int dr, int dc) {
-        // Start count at 1 because the placed piece (r, c) is always part of the streak.
-        int streak = 1;
+        int streak = 1; // Start with the piece itself
 
-        // Count in the positive direction (right, down)
+        // 1. Scan in the positive direction
         for (int i = 1; i < winStreak; i++) {
-            if (board.isValid(r + dr * i, c + dc * i) && board.getCell(r + dr * i, c + dc * i) == player) {
+            if (board.isValid(r + dr * i, c + dc * i) &&
+                    board.getCell(r + dr * i, c + dc * i) == player) {
                 streak++;
             } else {
                 break;
             }
         }
 
-        // Check if a win was already found in the first part
-        if (streak >= winStreak) {
-            return true;
-        }
+        // Optimization: Early exit if we already won
+        if (streak >= winStreak) return true;
 
-        // Count in the opposite direction (left, up)
+        // 2. Scan in the negative direction
         for (int i = 1; i < winStreak; i++) {
-            if (board.isValid(r - dr * i, c - dc * i) && board.getCell(r - dr * i, c - dc * i) == player) {
+            if (board.isValid(r - dr * i, c - dc * i) &&
+                    board.getCell(r - dr * i, c - dc * i) == player) {
                 streak++;
             } else {
                 break;
             }
         }
-
-        // Final check for the combined streak
         return streak >= winStreak;
     }
 
     /**
-     * НОВЫЙ МЕТОД: Находит и возвращает 5 координат победной линии.
-     * @return Список из 5+ координат [r, c] или null, если победы нет.
+     * Identifies and returns the coordinates of the winning line.
+     * This is used by the GUI to highlight the winning pieces.
+     *
+     * @param lastR  The row index of the winning move.
+     * @param lastC  The column index of the winning move.
+     * @param player The winning player ID.
+     * @return A list of coordinates {row, col} representing the winning streak, or null if no win found.
      */
     public List<int[]> findWinningLine(int lastR, int lastC, int player) {
         if (player == Board.EMPTY) return null;
 
         List<int[]> line;
 
+        // Check all directions and return the first valid winning line found
         line = getLineCoordinates(lastR, lastC, player, 0, 1); // Horizontal
         if (line != null) return line;
 
@@ -104,18 +102,19 @@ public class GameLogic {
         line = getLineCoordinates(lastR, lastC, player, 1, -1); // Anti-Diagonal
         if (line != null) return line;
 
-        return null; // Победы нет
+        return null;
     }
 
     /**
-     * НОВЫЙ МЕТОД: Собирает координаты фишек в одной линии.
-     * @return Список координат, если их >= winStreak, иначе null.
+     * Collects the coordinates of a consecutive streak in a given direction.
+     *
+     * @return A list of coordinates if the streak length >= winStreak, otherwise null.
      */
     private List<int[]> getLineCoordinates(int r, int c, int player, int dr, int dc) {
         List<int[]> line = new ArrayList<>();
-        line.add(new int[]{r, c}); // Добавляем фишку, которой сходили
+        line.add(new int[]{r, c}); // Add the starting piece
 
-        // Идем в положительном направлении
+        // Scan positive direction
         for (int i = 1; i < winStreak; i++) {
             int nr = r + dr * i;
             int nc = c + dc * i;
@@ -126,7 +125,7 @@ public class GameLogic {
             }
         }
 
-        // Идем в отрицательном направлении
+        // Scan negative direction
         for (int i = 1; i < winStreak; i++) {
             int nr = r - dr * i;
             int nc = c - dc * i;
@@ -136,8 +135,7 @@ public class GameLogic {
                 break;
             }
         }
-
-        // Если фишек 5 или больше, возвращаем линию
+        // Return the line only if it constitutes a win
         return (line.size() >= winStreak) ? line : null;
     }
 }

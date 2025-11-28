@@ -1,8 +1,3 @@
-/* =====================================================
-   GOMOKU GAME - PASTEL BEIGE & ROSE THEME
-   Elegant warm minimalist design with responsiveness
-   ===================================================== */
-
 /* ===== ROOT & GENERAL ===== */
 . root {
     -fx-font-family: "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
@@ -162,7 +157,7 @@
 }
 
 /* ===== SECONDARY BUTTON ===== */
-. secondary-button {
+.secondary-button {
     -fx-background-color: rgba(255, 252, 250, 0.9);
     -fx-text-fill: #8B7B75;
     -fx-font-size: 15px;
@@ -171,17 +166,18 @@
     -fx-padding: 14px 35px;
     -fx-background-radius: 25;
     -fx-cursor: hand;
-    -fx-border-color: #E0D5CF;
-    -fx-border-width: 1.5px;
-    -fx-border-radius: 25;
-    -fx-effect: dropshadow(gaussian, rgba(180,160,150,0.1), 8, 0, 0, 2);
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+
+    -fx-effect: dropshadow(gaussian, rgba(180, 160, 150, 0.1), 8, 0, 0, 2);
 }
 
-. secondary-button:hover {
+.secondary-button:hover {
     -fx-background-color: rgba(255, 255, 255, 1);
     -fx-text-fill: #6B5B55;
-    -fx-border-color: #D4C4BC;
-    -fx-effect: dropshadow(gaussian, rgba(180,160,150,0.18), 12, 0, 0, 4);
+    -fx-border-color: transparent;
+
+    -fx-effect: dropshadow(gaussian, rgba(180, 160, 150, 0.18), 12, 0, 0, 4);
     -fx-scale-x: 1.01;
     -fx-scale-y: 1.01;
 }
@@ -359,6 +355,7 @@
     -fx-border-width: 1px;
     -fx-border-radius: 8px;
     -fx-background-radius: 8px;
+    -fx-background-insets: 1;
     -fx-font-size: 12px;
     -fx-cursor: hand;
 }
@@ -367,21 +364,31 @@
     -fx-border-color: #D4C4BC;
 }
 
-. combo-box . list-cell {
-    -fx-background-color: #FFFCFA;
-    -fx-text-fill: #8B7B75;
-    -fx-padding: 6px 12px;
-}
-
-.combo-box .list-cell:hover {
-    -fx-background-color: rgba(212, 196, 188, 0.2);
-}
-
-. combo-box-popup . list-view {
+.combo-box-popup .list-view {
     -fx-background-color: #FFFCFA;
     -fx-border-color: #E0D5CF;
     -fx-border-radius: 8px;
     -fx-background-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(180, 160, 150, 0.15), 10, 0, 0, 3);
+}
+
+.combo-box-popup .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #8B7B75;
+    -fx-padding: 8px 12px;
+    -fx-font-size: 12px;
+}
+
+.combo-box-popup .list-view .list-cell:filled:hover {
+    -fx-background-color: #F2EFE9;
+    -fx-text-fill: #6B5B55;
+    -fx-cursor: hand;
+}
+
+.combo-box-popup .list-view .list-cell:filled:selected,
+.combo-box-popup .list-view .list-cell:filled:selected:hover {
+    -fx-background-color: #C9A9A9;
+    -fx-text-fill: #FFFFFF;
 }
 
 /* ===== SCROLL BAR ===== */
