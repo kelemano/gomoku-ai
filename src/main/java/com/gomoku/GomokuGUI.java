@@ -490,8 +490,6 @@ public class GomokuGUI extends Application {
                     ScaleTransition st = new ScaleTransition(Duration.millis(300), piece);
                     st.setToX(1.3);
                     st.setToY(1.3);
-                    st.setCycleCount(2);
-                    st.setAutoReverse(true);
                     st.play();
                 });
                 pause.play();
