@@ -8,7 +8,7 @@
 **Gomoku AI** is a high-performance, modern implementation of the classic strategy game "Five in a Row". This project fuses a premium, responsive **JavaFX** interface with a robust algorithmic core designed to challenge competitive players.
 
 The interface features a sophisticated **"Dusty Rose & Warm Beige"** palette, inspired by Japandi minimalism, ensuring a calming yet engaging user experience.
----
+
 
 ## 📸 Gallery & Interface
 
